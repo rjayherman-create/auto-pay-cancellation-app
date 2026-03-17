@@ -1,0 +1,12 @@
+packages:
+  "framer-motion": "Smooth page transitions and micro-interactions"
+  "recharts": "Dashboard analytics charts"
+  "date-fns": "Date formatting and manipulation"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility function to efficiently merge Tailwind CSS classes"
+images:
+  - path: "artifacts/autopay-cancel/public/images/auth-bg.png"
+    description: "Abstract soft gradient background in light blue and warm white, trustworthy, clean, minimal, suitable for a financial SaaS login page"
+    aspect_ratio: "16:9"
+notes:
+  - Assumes customFetch in @workspace/api-client-react reads localStorage.getItem('auth_token') automatically for Authorization headers.

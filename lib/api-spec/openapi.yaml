@@ -1,15 +1,22 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Auto-Pay Cancel Assistant API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: accounts
+    description: Bank account operations
+  - name: payments
+    description: Recurring payment operations
+  - name: documents
+    description: Document generation operations
 paths:
   /healthz:
     get:
@@ -24,7 +31,335 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /accounts:
+    get:
+      operationId: getBankAccounts
+      tags: [accounts]
+      summary: Get connected bank accounts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of bank accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BankAccount"
+    post:
+      operationId: connectBankAccount
+      tags: [accounts]
+      summary: Connect a bank account (simulate Plaid)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectBankRequest"
+      responses:
+        "201":
+          description: Bank account connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+
+  /accounts/{accountId}:
+    delete:
+      operationId: disconnectBankAccount
+      tags: [accounts]
+      summary: Disconnect a bank account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Account disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /payments:
+    get:
+      operationId: getRecurringPayments
+      tags: [payments]
+      summary: Get all recurring payments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, cancelled, disputed]
+        - name: accountId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of recurring payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecurringPayment"
+
+  /payments/{paymentId}:
+    get:
+      operationId: getRecurringPayment
+      tags: [payments]
+      summary: Get a single recurring payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recurring payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringPayment"
+    patch:
+      operationId: updatePaymentStatus
+      tags: [payments]
+      summary: Update payment status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePaymentStatusRequest"
+      responses:
+        "200":
+          description: Payment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringPayment"
+
+  /payments/{paymentId}/workflow:
+    get:
+      operationId: getCancellationWorkflow
+      tags: [payments]
+      summary: Get cancellation workflow for a payment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cancellation workflow steps
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancellationWorkflow"
+
+  /documents/email-template:
+    post:
+      operationId: generateEmailTemplate
+      tags: [documents]
+      summary: Generate cancellation email template
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateEmailRequest"
+      responses:
+        "200":
+          description: Generated email template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailTemplate"
+
+  /documents/ach-revocation:
+    post:
+      operationId: generateAchRevocation
+      tags: [documents]
+      summary: Generate ACH revocation letter
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateDocumentRequest"
+      responses:
+        "200":
+          description: Generated ACH revocation letter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedDocument"
+
+  /documents/stop-payment:
+    post:
+      operationId: generateStopPayment
+      tags: [documents]
+      summary: Generate stop payment request form
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateDocumentRequest"
+      responses:
+        "200":
+          description: Generated stop payment form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedDocument"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [payments]
+      summary: Get dashboard summary stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +369,340 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+      required:
+        - email
+        - password
+        - name
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        trialEndsAt:
+          type: string
+          format: date-time
+        subscriptionStatus:
+          type: string
+          enum: [trial, active, cancelled, expired]
+      required:
+        - id
+        - email
+        - name
+        - createdAt
+        - subscriptionStatus
+
+    BankAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        bankName:
+          type: string
+        accountType:
+          type: string
+        lastFour:
+          type: string
+        isActive:
+          type: boolean
+        connectedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - bankName
+        - accountType
+        - lastFour
+        - isActive
+        - connectedAt
+
+    ConnectBankRequest:
+      type: object
+      properties:
+        bankName:
+          type: string
+        accountType:
+          type: string
+          enum: [checking, savings, credit]
+        lastFour:
+          type: string
+      required:
+        - bankName
+        - accountType
+        - lastFour
+
+    RecurringPayment:
+      type: object
+      properties:
+        id:
+          type: integer
+        merchantName:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        frequency:
+          type: string
+          enum: [weekly, monthly, quarterly, annually]
+        category:
+          type: string
+        status:
+          type: string
+          enum: [active, cancelled, disputed]
+        nextChargeDate:
+          type: string
+          format: date
+        lastChargeDate:
+          type: string
+          format: date
+        accountId:
+          type: integer
+        cancellationDifficulty:
+          type: string
+          enum: [easy, medium, hard]
+        logoUrl:
+          type: string
+      required:
+        - id
+        - merchantName
+        - amount
+        - currency
+        - frequency
+        - category
+        - status
+        - nextChargeDate
+        - accountId
+        - cancellationDifficulty
+
+    UpdatePaymentStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, cancelled, disputed]
+      required:
+        - status
+
+    CancellationWorkflow:
+      type: object
+      properties:
+        merchantName:
+          type: string
+        difficulty:
+          type: string
+          enum: [easy, medium, hard]
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowStep"
+        cancellationUrl:
+          type: string
+        phoneNumber:
+          type: string
+        estimatedTime:
+          type: string
+        tips:
+          type: array
+          items:
+            type: string
+      required:
+        - merchantName
+        - difficulty
+        - steps
+
+    WorkflowStep:
+      type: object
+      properties:
+        stepNumber:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        actionType:
+          type: string
+          enum: [navigate, click, fill, call, email, chat]
+        actionUrl:
+          type: string
+      required:
+        - stepNumber
+        - title
+        - description
+        - actionType
+
+    GenerateEmailRequest:
+      type: object
+      properties:
+        paymentId:
+          type: integer
+        userName:
+          type: string
+        userEmail:
+          type: string
+      required:
+        - paymentId
+        - userName
+        - userEmail
+
+    GenerateDocumentRequest:
+      type: object
+      properties:
+        paymentId:
+          type: integer
+        userName:
+          type: string
+        bankName:
+          type: string
+        accountLastFour:
+          type: string
+      required:
+        - paymentId
+        - userName
+        - bankName
+        - accountLastFour
+
+    EmailTemplate:
+      type: object
+      properties:
+        subject:
+          type: string
+        body:
+          type: string
+        recipientEmail:
+          type: string
+      required:
+        - subject
+        - body
+
+    GeneratedDocument:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        instructions:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - content
+        - instructions
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalMonthlySpend:
+          type: number
+        activeSubscriptions:
+          type: integer
+        cancelledSubscriptions:
+          type: integer
+        potentialMonthlySavings:
+          type: number
+        totalSaved:
+          type: number
+        connectedAccounts:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityItem"
+      required:
+        - totalMonthlySpend
+        - activeSubscriptions
+        - cancelledSubscriptions
+        - potentialMonthlySavings
+        - totalSaved
+        - connectedAccounts
+        - recentActivity
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [cancelled, detected, disputed, saved]
+        merchantName:
+          type: string
+        amount:
+          type: number
+        date:
+          type: string
+          format: date-time
+        description:
+          type: string
+      required:
+        - id
+        - type
+        - merchantName
+        - amount
+        - date
+        - description

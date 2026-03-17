@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Auto-Pay Cancel Assistant"
+version = "1.0.0"
+id = "artifacts/autopay-cancel"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 25613
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/autopay-cancel run dev"
+
+[services.env]
+PORT = "25613"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/autopay-cancel", "run", "build"]
+publicDir = "artifacts/autopay-cancel/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
