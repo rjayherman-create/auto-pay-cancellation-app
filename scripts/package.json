@@ -5,7 +5,14 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "seed-products": "tsx ./src/seed-products.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@replit/connectors-sdk": "latest",
+    "@workspace/db": "workspace:*",
+    "stripe": "^20.4.1",
+    "stripe-replit-sync": "latest"
   },
   "devDependencies": {
     "@types/node": "catalog:",
