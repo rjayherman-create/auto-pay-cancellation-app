@@ -1,61 +1,44 @@
-import { getStripeSync } from "./stripeClient.js";
-import { runMigrations } from "stripe-replit-sync";
+import { getUncachableStripeClient } from "./stripeClient.js";
 
 /**
- * Creates Auto-Pay Cancel Assistant subscription products in Stripe.
+ * Seeds Auto-Pay Cancel Assistant products in Stripe.
+ * Run with: pnpm --filter @workspace/scripts run seed-products
  * Idempotent — safe to run multiple times.
- *
- * Run with: pnpm --filter @workspace/scripts exec tsx src/seed-products.ts
  */
 async function seedProducts() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) throw new Error("DATABASE_URL is required");
+  const stripe = await getUncachableStripeClient();
 
-  console.log("Running Stripe schema migrations...");
-  await runMigrations({ databaseUrl, schema: "stripe" });
+  console.log("🔍 Checking for existing Auto-Pay Cancel products...\n");
 
-  const stripeSync = await getStripeSync();
-  const stripe = (stripeSync as any).stripe;
-
-  if (!stripe) {
-    throw new Error("Could not get Stripe client from StripeSync");
-  }
-
-  console.log("Checking for existing products...");
-
-  // Check if our product already exists
-  const existing = await stripe.products.search({
+  const existingProducts = await stripe.products.search({
     query: "name:'Auto-Pay Cancel Assistant' AND active:'true'",
   });
 
-  if (existing.data.length > 0) {
-    const product = existing.data[0];
+  if (existingProducts.data.length > 0) {
+    const product = existingProducts.data[0];
     console.log(`✓ Product already exists: ${product.name} (${product.id})`);
 
     const prices = await stripe.prices.list({ product: product.id, active: true });
-    console.log(`  Found ${prices.data.length} active prices:`);
+    console.log(`  Active prices:`);
     for (const price of prices.data) {
-      const amount = (price.unit_amount ?? 0) / 100;
-      const interval = (price.recurring as any)?.interval ?? "one-time";
+      const amount = ((price.unit_amount || 0) / 100).toFixed(2);
+      const interval = (price.recurring as any)?.interval || "one-time";
       console.log(`  - $${amount}/${interval} → ${price.id}`);
     }
+    console.log("\n✅ Products already seeded. No changes made.");
     return;
   }
 
-  console.log("Creating Auto-Pay Cancel Assistant product...");
+  console.log("📦 Creating Auto-Pay Cancel Assistant product...");
 
   const product = await stripe.products.create({
     name: "Auto-Pay Cancel Assistant",
     description:
-      "Detect, manage, and cancel unwanted recurring subscriptions. Includes cancellation guidance, email templates, and legal document generation.",
-    metadata: {
-      app: "autopay-cancel",
-    },
+      "Detect, manage, and cancel unwanted recurring payments. Includes cancellation guides, email templates, and legal document generation.",
+    metadata: { app: "autopay-cancel" },
   });
-
   console.log(`✓ Created product: ${product.name} (${product.id})`);
 
-  // $7.99/month
   const monthlyPrice = await stripe.prices.create({
     product: product.id,
     unit_amount: 799,
@@ -63,9 +46,8 @@ async function seedProducts() {
     recurring: { interval: "month" },
     metadata: { plan: "monthly" },
   });
-  console.log(`✓ Created monthly price: $7.99/month → ${monthlyPrice.id}`);
+  console.log(`✓ Monthly plan: $7.99/month → ${monthlyPrice.id}`);
 
-  // $59.99/year (37% savings vs monthly)
   const yearlyPrice = await stripe.prices.create({
     product: product.id,
     unit_amount: 5999,
@@ -73,15 +55,15 @@ async function seedProducts() {
     recurring: { interval: "year" },
     metadata: { plan: "annual" },
   });
-  console.log(`✓ Created annual price: $59.99/year → ${yearlyPrice.id}`);
+  console.log(`✓ Annual plan: $59.99/year → ${yearlyPrice.id}`);
 
   console.log("\n✅ Products seeded successfully!");
-  console.log("Syncing to local database...");
-  await stripeSync.syncBackfill();
-  console.log("✅ Sync complete!");
+  console.log("\nPrice IDs:");
+  console.log(`  Monthly: ${monthlyPrice.id}`);
+  console.log(`  Annual:  ${yearlyPrice.id}`);
 }
 
 seedProducts().catch((err) => {
-  console.error("Seed failed:", err);
+  console.error("❌ Seed failed:", err.message || err);
   process.exit(1);
 });

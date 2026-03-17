@@ -18,6 +18,8 @@ export const bankAccountsTable = pgTable("bank_accounts", {
   accountType: accountTypeEnum("account_type").notNull(),
   lastFour: text("last_four").notNull(),
   isActive: boolean("is_active").notNull().default(true),
+  plaidAccessToken: text("plaid_access_token"),
+  plaidItemId: text("plaid_item_id"),
   connectedAt: timestamp("connected_at").notNull().defaultNow(),
 });
 

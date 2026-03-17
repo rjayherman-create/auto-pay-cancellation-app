@@ -1,21 +1,51 @@
 import { Router, type IRouter } from "express";
-import { stripeService } from "../stripeService.js";
-import { stripeStorage } from "../stripeStorage.js";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import {
+  getOrCreateStripeCustomer,
+  createCheckoutSession,
+  createPortalSession,
+  getUserSubscription,
+} from "../stripeService.js";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
 const router: IRouter = Router();
 
-// Get available subscription plans (products + prices from Stripe)
+// GET /api/stripe/plans — list active products+prices from the synced stripe schema
 router.get("/plans", async (_req, res) => {
   try {
-    const rows = await stripeStorage.listProductsWithPrices(true);
+    const rows = await db.execute(sql`
+      WITH paginated_products AS (
+        SELECT id, name, description, metadata, active
+        FROM stripe.products
+        WHERE active = true
+        ORDER BY id
+        LIMIT 20
+      )
+      SELECT
+        p.id AS product_id,
+        p.name AS product_name,
+        p.description AS product_description,
+        pr.id AS price_id,
+        pr.unit_amount,
+        pr.currency,
+        pr.recurring,
+        pr.active AS price_active
+      FROM paginated_products p
+      LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
+      ORDER BY p.id, pr.unit_amount
+    `);
 
     // Group prices by product
     const productsMap = new Map<string, {
-      id: string; name: string; description: string | null; prices: object[];
+      id: string;
+      name: string;
+      description: string | null;
+      prices: object[];
     }>();
 
-    for (const row of rows as any[]) {
+    for (const row of rows.rows as any[]) {
       if (!productsMap.has(row.product_id)) {
         productsMap.set(row.product_id, {
           id: row.product_id,
@@ -34,44 +64,46 @@ router.get("/plans", async (_req, res) => {
       }
     }
 
-    res.json({ plans: Array.from(productsMap.values()) });
-  } catch (err) {
-    console.error("Error fetching plans:", err);
+    const plans = Array.from(productsMap.values()).filter((p) => p.prices.length > 0);
+    res.json({ plans });
+  } catch (err: any) {
+    console.error("[Stripe] Error fetching plans:", err.message);
     res.json({ plans: [] });
   }
 });
 
-// Get current user's subscription status
+// GET /api/stripe/subscription — user's current subscription status
 router.get("/subscription", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
 
-  const user = await stripeStorage.getUserById(userId);
   if (!user?.stripeCustomerId) {
     res.json({ subscription: null, status: "none" });
     return;
   }
 
-  const subscription = await stripeStorage.getSubscriptionByCustomerId(
-    user.stripeCustomerId
-  );
-
-  if (!subscription) {
+  try {
+    const sub = await getUserSubscription(user.stripeCustomerId);
+    if (!sub) {
+      res.json({ subscription: null, status: "none" });
+      return;
+    }
+    res.json({
+      subscription: {
+        id: sub.id,
+        status: sub.status,
+        currentPeriodEnd: (sub as any).current_period_end,
+        cancelAtPeriodEnd: (sub as any).cancel_at_period_end,
+      },
+      status: sub.status,
+    });
+  } catch (err: any) {
+    console.error("[Stripe] Subscription fetch error:", err.message);
     res.json({ subscription: null, status: "none" });
-    return;
   }
-
-  res.json({
-    subscription: {
-      id: (subscription as any).id,
-      status: (subscription as any).status,
-      currentPeriodEnd: (subscription as any).current_period_end,
-      cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
-    },
-    status: (subscription as any).status,
-  });
 });
 
-// Create checkout session to subscribe
+// POST /api/stripe/checkout — start subscription checkout
 router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
   const { priceId } = req.body as { priceId: string };
@@ -81,16 +113,18 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res) => 
     return;
   }
 
-  const user = await stripeStorage.getUserById(userId);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
     res.status(404).json({ error: "not_found", message: "User not found" });
     return;
   }
 
-  const customerId = await stripeService.getOrCreateCustomer(userId, user.email);
+  const customerId = await getOrCreateStripeCustomer(userId, user.email);
 
-  const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost"}`;
-  const session = await stripeService.createCheckoutSession(
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+  const baseUrl = domain ? `https://${domain}` : "http://localhost:3000";
+
+  const session = await createCheckoutSession(
     customerId,
     priceId,
     `${baseUrl}/settings?subscription=success`,
@@ -100,10 +134,10 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res) => 
   res.json({ url: session.url });
 });
 
-// Create customer portal session to manage billing
+// POST /api/stripe/portal — manage billing via Stripe Customer Portal
 router.post("/portal", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const user = await stripeStorage.getUserById(userId);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
 
   if (!user?.stripeCustomerId) {
     res.status(400).json({
@@ -113,12 +147,10 @@ router.post("/portal", requireAuth, async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost"}`;
-  const session = await stripeService.createCustomerPortalSession(
-    user.stripeCustomerId,
-    `${baseUrl}/settings`
-  );
+  const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+  const baseUrl = domain ? `https://${domain}` : "http://localhost:3000";
 
+  const session = await createPortalSession(user.stripeCustomerId, `${baseUrl}/settings`);
   res.json({ url: session.url });
 });
 

@@ -1,52 +1,57 @@
 import { getUncachableStripeClient } from "./stripeClient.js";
-import { stripeStorage } from "./stripeStorage.js";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
-export class StripeService {
-  async createCustomer(email: string, userId: number) {
-    const stripe = await getUncachableStripeClient();
-    return await stripe.customers.create({
-      email,
-      metadata: { userId: String(userId) },
-    });
-  }
+export async function getOrCreateStripeCustomer(userId: number, email: string): Promise<string> {
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!user) throw new Error("User not found");
 
-  async createCheckoutSession(
-    customerId: string,
-    priceId: string,
-    successUrl: string,
-    cancelUrl: string
-  ) {
-    const stripe = await getUncachableStripeClient();
-    return await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      mode: "subscription",
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-    });
-  }
+  if (user.stripeCustomerId) return user.stripeCustomerId;
 
-  async createCustomerPortalSession(customerId: string, returnUrl: string) {
-    const stripe = await getUncachableStripeClient();
-    return await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: returnUrl,
-    });
-  }
+  const stripe = await getUncachableStripeClient();
+  const customer = await stripe.customers.create({
+    email,
+    metadata: { userId: String(userId) },
+  });
 
-  async getOrCreateCustomer(userId: number, email: string) {
-    const user = await stripeStorage.getUserById(userId);
-    if (!user) throw new Error("User not found");
+  await db
+    .update(usersTable)
+    .set({ stripeCustomerId: customer.id })
+    .where(eq(usersTable.id, userId));
 
-    if (user.stripeCustomerId) return user.stripeCustomerId;
-
-    const customer = await this.createCustomer(email, userId);
-    await stripeStorage.updateUserStripeInfo(userId, {
-      stripeCustomerId: customer.id,
-    });
-    return customer.id;
-  }
+  return customer.id;
 }
 
-export const stripeService = new StripeService();
+export async function createCheckoutSession(
+  customerId: string,
+  priceId: string,
+  successUrl: string,
+  cancelUrl: string
+) {
+  const stripe = await getUncachableStripeClient();
+  return await stripe.checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    line_items: [{ price: priceId, quantity: 1 }],
+  });
+}
+
+export async function createPortalSession(customerId: string, returnUrl: string) {
+  const stripe = await getUncachableStripeClient();
+  return await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: returnUrl,
+  });
+}
+
+export async function getUserSubscription(customerId: string) {
+  const stripe = await getUncachableStripeClient();
+  const result = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "active",
+    limit: 1,
+  });
+  return result.data[0] || null;
+}

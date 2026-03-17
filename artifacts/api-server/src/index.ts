@@ -3,52 +3,43 @@ import { getStripeSync } from "./stripeClient.js";
 import app from "./app.js";
 
 const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error("PORT environment variable is required but was not provided.");
-}
+if (!rawPort) throw new Error("PORT environment variable is required.");
 
 const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
+if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT: "${rawPort}"`);
 
 async function initStripe() {
   const databaseUrl = process.env.DATABASE_URL;
-
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for Stripe integration.");
-  }
+  if (!databaseUrl) throw new Error("DATABASE_URL is required for Stripe integration.");
 
   try {
-    console.log("Initializing Stripe schema...");
+    console.log("[Stripe] Running schema migrations...");
     await runMigrations({ databaseUrl, schema: "stripe" });
-    console.log("Stripe schema ready");
+    console.log("[Stripe] Schema ready.");
 
     const stripeSync = await getStripeSync();
 
-    const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0] || "localhost"}`;
-    console.log("Setting up managed webhook at:", webhookBaseUrl);
-    const { webhook } = await stripeSync.findOrCreateManagedWebhook(
-      `${webhookBaseUrl}/api/stripe/webhook`
-    );
-    console.log("Webhook configured:", webhook?.url || "setup complete");
+    const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+    if (domain) {
+      const webhookUrl = `https://${domain}/api/stripe/webhook`;
+      console.log("[Stripe] Setting up managed webhook:", webhookUrl);
+      const { webhook } = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+      console.log("[Stripe] Webhook configured:", webhook?.url || "complete");
+    }
 
     // Sync existing Stripe data in the background
     stripeSync
       .syncBackfill()
-      .then(() => console.log("Stripe data sync complete"))
-      .catch((err) => console.error("Stripe sync error:", err));
-  } catch (error) {
-    console.error("Failed to initialize Stripe:", error);
-    // Don't crash the server if Stripe init fails — app still works without billing
+      .then(() => console.log("[Stripe] Data sync complete"))
+      .catch((err) => console.error("[Stripe] Sync error:", err.message));
+  } catch (error: any) {
+    // Don't crash server — app still works without billing
+    console.error("[Stripe] Initialization error:", error.message);
   }
 }
 
-// Initialize Stripe, then start listening
 await initStripe();
 
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+  console.log(`[AutoPay Cancel API] Server listening on port ${port}`);
 });
