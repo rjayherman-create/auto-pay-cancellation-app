@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout";
 import { useGetBankAccounts, useDisconnectBankAccount } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -118,25 +118,28 @@ function PlaidLinkButton({
     }
   };
 
+  const connectingRef = useRef(false);
+
+  // Auto-trigger after token is ready — use effect to avoid render-side effects
+  useEffect(() => {
+    if (!linkToken || connectingRef.current) return;
+    if (demoMode) {
+      connectingRef.current = true;
+      handleDemoConnect().finally(() => { connectingRef.current = false; });
+    } else if (ready) {
+      open();
+    }
+  }, [linkToken, demoMode, ready]);
+
   const handleClick = async () => {
     if (!linkToken) {
       await createLinkToken();
-      return;
-    }
-    if (demoMode) {
+    } else if (demoMode) {
       handleDemoConnect();
     } else if (ready) {
       open();
     }
   };
-
-  // Auto-open when token is ready (non-demo)
-  if (linkToken && !demoMode && ready) {
-    open();
-  }
-  if (linkToken && demoMode) {
-    handleDemoConnect();
-  }
 
   return (
     <Button
