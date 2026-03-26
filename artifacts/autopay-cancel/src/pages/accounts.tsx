@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Layout } from "@/components/layout";
 import { useGetBankAccounts, useDisconnectBankAccount } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,155 +7,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   Building, Plus, CreditCard, Trash2, Loader2,
-  ShieldCheck, Lock, Zap, AlertCircle,
+  ShieldCheck, Lock, Zap,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetBankAccountsQueryKey } from "@workspace/api-client-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { usePlaidLink } from "react-plaid-link";
-
-const API_BASE = "/api";
-
-function authFetch(path: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("auth_token");
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
-}
-
-// ─── Plaid Link Button ────────────────────────────────────────────────────────
-function PlaidLinkButton({
-  onSuccess,
-  onStart,
-  onEnd,
-}: {
-  onSuccess: () => void;
-  onStart: () => void;
-  onEnd: () => void;
-}) {
-  const [linkToken, setLinkToken] = useState<string | null>(null);
-  const [demoMode, setDemoMode] = useState(false);
-  const [loadingToken, setLoadingToken] = useState(false);
-
-  const createLinkToken = async () => {
-    setLoadingToken(true);
-    try {
-      const res = await authFetch("/plaid/create-link-token", { method: "POST" });
-      const data = await res.json() as any;
-      if (data.link_token) {
-        setDemoMode(data.demo_mode || false);
-        setLinkToken(data.link_token);
-      } else {
-        toast.error("Failed to start bank connection.");
-      }
-    } catch {
-      toast.error("Connection error. Please try again.");
-    } finally {
-      setLoadingToken(false);
-    }
-  };
-
-  const { open, ready } = usePlaidLink({
-    token: linkToken || "",
-    onSuccess: async (public_token, metadata) => {
-      onStart();
-      try {
-        const res = await authFetch("/plaid/exchange-token", {
-          method: "POST",
-          body: JSON.stringify({
-            public_token,
-            institution_name: metadata.institution?.name,
-          }),
-        });
-        const data = await res.json() as any;
-        if (data.success) {
-          toast.success(
-            `Connected! Found ${data.recurringCount ?? "some"} recurring payment${
-              data.recurringCount !== 1 ? "s" : ""
-            }.`
-          );
-          onSuccess();
-        } else {
-          toast.error(data.message || "Failed to connect account.");
-        }
-      } catch {
-        toast.error("Failed to sync bank data.");
-      } finally {
-        onEnd();
-        setLinkToken(null);
-      }
-    },
-    onExit: () => {
-      onEnd();
-      setLinkToken(null);
-    },
-  });
-
-  // Demo mode — exchange immediately without Plaid modal
-  const handleDemoConnect = async () => {
-    onStart();
-    try {
-      const res = await authFetch("/plaid/exchange-token", {
-        method: "POST",
-        body: JSON.stringify({ public_token: "demo-link-token" }),
-      });
-      const data = await res.json() as any;
-      if (data.success) {
-        toast.success("Demo bank connected! 5 sample subscriptions detected.");
-        onSuccess();
-      }
-    } catch {
-      toast.error("Demo connection failed.");
-    } finally {
-      onEnd();
-      setLinkToken(null);
-    }
-  };
-
-  const connectingRef = useRef(false);
-
-  // Auto-trigger after token is ready — use effect to avoid render-side effects
-  useEffect(() => {
-    if (!linkToken || connectingRef.current) return;
-    if (demoMode) {
-      connectingRef.current = true;
-      handleDemoConnect().finally(() => { connectingRef.current = false; });
-    } else if (ready) {
-      open();
-    }
-  }, [linkToken, demoMode, ready]);
-
-  const handleClick = async () => {
-    if (!linkToken) {
-      await createLinkToken();
-    } else if (demoMode) {
-      handleDemoConnect();
-    } else if (ready) {
-      open();
-    }
-  };
-
-  return (
-    <Button
-      onClick={handleClick}
-      disabled={loadingToken}
-      className="shadow-md shadow-primary/20"
-    >
-      {loadingToken ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <Plus className="mr-2 h-4 w-4" />
-      )}
-      Connect Bank Account
-    </Button>
-  );
-}
+import { PlaidLinkButton } from "@/components/plaid-link-button";
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Accounts() {

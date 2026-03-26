@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth";
 
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import Onboarding from "@/pages/onboarding";
 import Dashboard from "@/pages/dashboard";
 import Subscriptions from "@/pages/subscriptions";
 import SubscriptionDetail from "@/pages/subscription-detail";
@@ -30,6 +31,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/subscriptions" component={Subscriptions} />
       <Route path="/subscriptions/:id" component={SubscriptionDetail} />

@@ -16,7 +16,7 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (isLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary h-8 w-8" /></div>;
-  if (user) return <Redirect to="/dashboard" />;
+  if (user) return <Redirect to="/onboarding" />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
