@@ -5,15 +5,17 @@ import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
 const router: IRouter = Router();
 
-const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID;
-const PLAID_SECRET = process.env.PLAID_SECRET;
-const PLAID_ENV = process.env.PLAID_ENV || "sandbox";
+const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID?.trim();
+const PLAID_SECRET = process.env.PLAID_SECRET?.trim();
+const PLAID_ENV = (process.env.PLAID_ENV || "sandbox").trim();
 const PLAID_BASE = `https://${PLAID_ENV}.plaid.com`;
 
 const plaidAvailable = Boolean(PLAID_CLIENT_ID && PLAID_SECRET);
 
 if (!plaidAvailable) {
   console.warn("[Plaid] PLAID_CLIENT_ID and PLAID_SECRET are not set — running in demo mode.");
+} else {
+  console.log(`[Plaid] Credentials loaded. Environment: ${PLAID_ENV} (${PLAID_BASE})`);
 }
 
 async function plaidRequest(endpoint: string, body: Record<string, unknown>) {
@@ -29,6 +31,7 @@ async function plaidRequest(endpoint: string, body: Record<string, unknown>) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as any;
+    console.error("[Plaid] API error:", JSON.stringify(err));
     throw new Error(err.error_message || `Plaid error: ${res.status}`);
   }
 
@@ -50,15 +53,20 @@ router.post("/create-link-token", requireAuth, async (req: AuthenticatedRequest,
     return;
   }
 
-  const data = await plaidRequest("/link/token/create", {
-    user: { client_user_id: String(userId) },
-    client_name: "Auto-Pay Cancel Assistant",
-    products: ["transactions"],
-    country_codes: ["US"],
-    language: "en",
-  }) as any;
+  try {
+    const data = await plaidRequest("/link/token/create", {
+      user: { client_user_id: String(userId) },
+      client_name: "Auto-Pay Cancel Assistant",
+      products: ["transactions"],
+      country_codes: ["US"],
+      language: "en",
+    }) as any;
 
-  res.json({ link_token: data.link_token });
+    res.json({ link_token: data.link_token });
+  } catch (err: any) {
+    console.error("[Plaid] create-link-token failed:", err.message);
+    res.status(500).json({ error: "plaid_error", message: err.message });
+  }
 });
 
 // POST /api/plaid/exchange-token
