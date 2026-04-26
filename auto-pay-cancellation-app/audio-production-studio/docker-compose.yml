@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Audio Production Backend API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audio-studio-api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      KITSAI_API_KEY: ${KITSAI_API_KEY}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./src:/app/src
+    networks:
+      - audio-network
+    restart: unless-stopped
+    depends_on:
+      - ffmpeg
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # FFmpeg service for audio/video processing
+  ffmpeg:
+    image: jrottenberg/ffmpeg:5.1-alpine
+    container_name: audio-studio-ffmpeg
+    volumes:
+      - ./uploads:/uploads
+    networks:
+      - audio-network
+    restart: unless-stopped
+    command: tail -f /dev/null
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: audio-studio-frontend
+    ports:
+      - "8080:5173"  # Expose on port 8080 (localhost:8080)
+    environment:
+      VITE_API_URL: http://localhost:3000
+    depends_on:
+      - api
+    networks:
+      - audio-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  uploads:
+    driver: local
+
+networks:
+  audio-network:
+    driver: bridge

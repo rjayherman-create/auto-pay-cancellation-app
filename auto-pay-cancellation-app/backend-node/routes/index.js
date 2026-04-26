@@ -1,0 +1,40 @@
+const express = require('express');
+const authRoutes = require('./auth');
+const batchRoutes = require('./batches');
+const cardRoutes = require('./cards');
+const occasionRoutes = require('./occasions');
+const trainingRoutes = require('./training');
+const settingsRoutes = require('./settings');
+const inventoryRoutes = require('./inventory');
+const mediaRoutes = require('./media');
+const storeRoutes = require('./store');
+const aiRoutes = require('./ai');
+const setupRoutes = require('./setup');
+const textRoutes = require('./text');
+const textGenerationRoutes = require('./textGeneration');
+const tonesRoutes = require('./tones');
+const visualStylesRoutes = require('./visual-styles');
+const adminRoutes = require('./admin');
+const cardCreatorRoutes = require('./card-creator');
+
+const router = express.Router();
+
+router.use('/auth', authRoutes);
+router.use('/setup', setupRoutes);
+router.use('/batches', batchRoutes);
+router.use('/cards', cardRoutes);
+router.use('/occasions', occasionRoutes);
+router.use('/training', trainingRoutes);
+router.use('/settings', settingsRoutes);
+router.use('/inventory', inventoryRoutes);
+router.use('/media', mediaRoutes);
+router.use('/store', storeRoutes);
+router.use('/ai', aiRoutes);
+router.use('/text', textRoutes);
+router.use('/text-generation', textGenerationRoutes);
+router.use('/tones', tonesRoutes);
+router.use('/visual-styles', visualStylesRoutes);
+router.use('/admin', adminRoutes);
+router.use('/card-creator', cardCreatorRoutes);
+
+module.exports = router;
