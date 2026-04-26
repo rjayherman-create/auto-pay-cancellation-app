@@ -121,7 +121,7 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res) => 
 
   const customerId = await getOrCreateStripeCustomer(userId, user.email);
 
-  const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+  const domain = process.env.APP_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
   const baseUrl = domain ? `https://${domain}` : "http://localhost:3000";
 
   const session = await createCheckoutSession(
@@ -147,7 +147,7 @@ router.post("/portal", requireAuth, async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
+  const domain = process.env.APP_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
   const baseUrl = domain ? `https://${domain}` : "http://localhost:3000";
 
   const session = await createPortalSession(user.stripeCustomerId, `${baseUrl}/settings`);
