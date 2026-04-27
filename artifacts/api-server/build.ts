@@ -54,6 +54,16 @@ async function buildAll() {
       !(pkg.dependencies?.[dep]?.startsWith("workspace:")),
   );
 
+  const builtins = [
+    'assert', 'async_hooks', 'buffer', 'child_process', 'cluster', 'console',
+    'constants', 'crypto', 'dgram', 'diagnostics_channel', 'dns', 'domain',
+    'events', 'fs', 'fs/promises', 'http', 'http2', 'https', 'inspector',
+    'module', 'net', 'os', 'path', 'perf_hooks', 'process', 'punycode',
+    'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys',
+    'timers', 'timers/promises', 'tls', 'trace_events', 'tty', 'url',
+    'util', 'v8', 'vm', 'wasi', 'worker_threads', 'zlib'
+  ];
+
   await esbuild({
     entryPoints: [path.resolve(__dirname, "src/index.ts")],
     platform: "node",
@@ -64,7 +74,7 @@ async function buildAll() {
       "process.env.NODE_ENV": '"production"',
     },
     minify: true,
-    external: externals,
+    external: [...externals, ...builtins],
     logLevel: "info",
   });
 }
