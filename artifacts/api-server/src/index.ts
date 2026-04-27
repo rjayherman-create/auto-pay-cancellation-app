@@ -42,8 +42,17 @@ function resolveDbUrl(): string | undefined {
 }
 
 async function initStripe() {
+  // Check whether a real Stripe secret key is present (done first so the
+  // billing-status line always appears, regardless of DB availability).
   const stripeKey = process.env.STRIPE_SECRET_KEY ?? "";
   const hasRealStripeKey = stripeKey.startsWith("sk_test_") || stripeKey.startsWith("sk_live_");
+  const env = process.env.NODE_ENV ?? "unknown";
+  const keyPrefix = stripeKey.startsWith("sk_live_") ? "sk_live_..." : stripeKey.startsWith("sk_test_") ? "sk_test_..." : "none";
+  if (hasRealStripeKey) {
+    console.log(`[Stripe] Billing ACTIVE (key: ${keyPrefix} | env: ${env})`);
+  } else {
+    console.log(`[Stripe] Billing INACTIVE — no real Stripe key (env: ${env})`);
+  }
 
   if (!hasRealStripeKey) {
     console.log("[Stripe] No real Stripe key detected — skipping billing initialization.");
