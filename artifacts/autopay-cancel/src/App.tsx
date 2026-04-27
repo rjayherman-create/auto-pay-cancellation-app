@@ -76,6 +76,8 @@ function Router() {
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route path="/login"><Redirect to="/sign-in" /></Route>
+      <Route path="/register"><Redirect to="/sign-up" /></Route>
       <Route path="/">
         <Show when="signed-in">
           <Redirect to="/dashboard" />

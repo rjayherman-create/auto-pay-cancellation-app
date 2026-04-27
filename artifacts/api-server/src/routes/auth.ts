@@ -73,10 +73,10 @@ router.post("/logout", (_req, res) => {
   res.json({ success: true });
 });
 
-// POST /api/auth/dev-login — ONLY available in development. Sets a cookie that
-// bypasses Clerk so you can test the app without a working auth flow.
+// POST /api/auth/dev-login — Sets a cookie that bypasses Clerk auth.
+// Only active when ENABLE_DEV_BYPASS=true is set in environment variables.
 router.post("/dev-login", (req, res) => {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.ENABLE_DEV_BYPASS !== "true") {
     res.status(404).json({ error: "not_found" });
     return;
   }

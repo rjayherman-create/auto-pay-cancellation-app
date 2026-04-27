@@ -3,7 +3,7 @@ import { SignIn } from "@clerk/react";
 import { useLocation } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const isDev = import.meta.env.DEV;
+const showBypass = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
 
 export default function SignInPage() {
   const [, setLocation] = useLocation();
@@ -36,7 +36,7 @@ export default function SignInPage() {
         fallbackRedirectUrl={`${basePath}/dashboard`}
       />
 
-      {isDev && (
+      {showBypass && (
         <div className="w-full max-w-sm rounded-xl border border-amber-200 bg-amber-50 p-4 text-center shadow-sm">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
             Dev / Testing bypass
