@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAuth as useClerkAuth } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { usePlaidLink } from "react-plaid-link";
@@ -24,20 +23,16 @@ export function PlaidLinkButton({
   className,
   size = "default",
 }: PlaidLinkButtonProps) {
-  const { getToken } = useClerkAuth();
-
   const authFetch = useCallback(async (path: string, options: RequestInit = {}) => {
-    const token = await getToken();
     return fetch(`${API_BASE}${path}`, {
       ...options,
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers as Record<string, string> || {}),
       },
     });
-  }, [getToken]);
+  }, []);
 
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
@@ -142,6 +137,7 @@ export function PlaidLinkButton({
 
   return (
     <Button
+      data-plaid-connect
       onClick={handleClick}
       disabled={loadingToken}
       size={size}
