@@ -17,7 +17,7 @@ export default function Onboarding() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
   const { data: accounts, isLoading: accountsLoading } = useGetBankAccounts({
-    query: { enabled: !!user },
+    query: { queryKey: getGetBankAccountsQueryKey(), enabled: !!user },
   });
 
   // Redirect to register if not logged in, skip onboarding if already has accounts

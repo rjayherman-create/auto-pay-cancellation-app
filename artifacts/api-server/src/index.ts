@@ -16,7 +16,7 @@ async function initStripe() {
   try {
     const { runMigrations } = await import("stripe-replit-sync");
     console.log("[Stripe] Running schema migrations...");
-    await runMigrations({ databaseUrl, schema: "stripe" });
+    await runMigrations({ databaseUrl });
     console.log("[Stripe] Schema ready.");
 
     const { getStripeSync } = await import("./stripeClient.js");
@@ -26,8 +26,8 @@ async function initStripe() {
     if (domain) {
       const webhookUrl = `https://${domain}/api/stripe/webhook`;
       console.log("[Stripe] Setting up managed webhook:", webhookUrl);
-      const { webhook } = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
-      console.log("[Stripe] Webhook configured:", webhook?.url || "complete");
+      const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+      console.log("[Stripe] Webhook configured:", (result as any)?.webhook?.url || "complete");
     }
 
     stripeSync

@@ -155,12 +155,14 @@ router.post("/exchange-token", requireAuth, async (req: AuthenticatedRequest, re
   for (const r of recurring) {
     await db.insert(recurringPaymentsTable).values({
       userId,
-      bankAccountId: account.id,
+      accountId: account.id,
       merchantName: r.name,
-      amount: String(r.amount),
-      billingCycle: r.cycle,
+      amount: r.amount,
+      frequency: r.cycle as "weekly" | "monthly" | "quarterly" | "annually",
       category: r.category,
-      detectedAt: new Date(),
+      nextChargeDate: new Date().toISOString().split("T")[0],
+      currency: "USD",
+      cancellationDifficulty: "medium",
     }).onConflictDoNothing();
   }
 
@@ -247,9 +249,14 @@ async function seedDemoPayments(userId: number, accountId: number) {
     if (existing.length === 0) {
       await db.insert(recurringPaymentsTable).values({
         userId,
-        bankAccountId: accountId,
-        ...demo,
-        detectedAt: new Date(),
+        accountId,
+        merchantName: demo.merchantName,
+        amount: parseFloat(demo.amount),
+        frequency: demo.billingCycle as "weekly" | "monthly" | "quarterly" | "annually",
+        category: demo.category,
+        nextChargeDate: new Date().toISOString().split("T")[0],
+        currency: "USD",
+        cancellationDifficulty: "medium",
       });
     }
   }

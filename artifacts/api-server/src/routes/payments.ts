@@ -47,7 +47,7 @@ router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
 
 router.get("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const paymentId = parseInt(req.params.paymentId, 10);
+  const paymentId = parseInt(String(req.params.paymentId), 10);
 
   const [payment] = await db
     .select()
@@ -78,7 +78,7 @@ router.get("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) =>
 
 router.patch("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const paymentId = parseInt(req.params.paymentId, 10);
+  const paymentId = parseInt(String(req.params.paymentId), 10);
   const { status } = req.body as { status: "active" | "cancelled" | "disputed" };
 
   if (!status || !["active", "cancelled", "disputed"].includes(status)) {
@@ -140,7 +140,7 @@ router.patch("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) 
 
 router.get("/:paymentId/workflow", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const paymentId = parseInt(req.params.paymentId, 10);
+  const paymentId = parseInt(String(req.params.paymentId), 10);
 
   const [payment] = await db
     .select()

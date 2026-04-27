@@ -13,7 +13,7 @@ function getStripeSecretKey(): string {
 }
 
 export async function getUncachableStripeClient(): Promise<Stripe> {
-  return new Stripe(getStripeSecretKey(), { apiVersion: "2025-02-24.acacia" });
+  return new Stripe(getStripeSecretKey(), { apiVersion: "2026-02-25.clover" });
 }
 
 export async function getStripeSync(): Promise<StripeSync> {
@@ -22,7 +22,7 @@ export async function getStripeSync(): Promise<StripeSync> {
 
   return new StripeSync({
     stripeSecretKey: getStripeSecretKey(),
-    stripeApiVersion: "2025-02-24.acacia",
-    databaseUrl,
+    stripeApiVersion: "2026-02-25.clover",
+    poolConfig: { connectionString: databaseUrl },
   });
 }

@@ -57,7 +57,7 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
 
 router.delete("/:accountId", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const accountId = parseInt(req.params.accountId, 10);
+  const accountId = parseInt(String(req.params.accountId), 10);
 
   const [account] = await db
     .select()
