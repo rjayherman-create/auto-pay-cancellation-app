@@ -123,8 +123,21 @@ if (isProd) {
 
   console.log("[Static] Serving frontend from:", frontendDir);
 
-  // Serve hashed assets (JS/CSS/images) with long cache — Vite content-hashes them
-  app.use(express.static(frontendDir, { maxAge: "1y", index: false }));
+  // Serve hashed assets (JS/CSS/images) with long cache — Vite content-hashes them.
+  // HTML files get no-cache so deploys always take effect (even if requested as /index.html).
+  app.use(
+    express.static(frontendDir, {
+      maxAge: "1y",
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
+        }
+      },
+    }),
+  );
 
   // SPA catch-all: serve index.html with no-cache so deploys take effect immediately
   app.get(/(.*)/, (_req, res) => {
