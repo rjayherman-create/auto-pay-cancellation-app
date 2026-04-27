@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { db, usersTable } from "@workspace/db";
+import { getDb, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
@@ -29,7 +29,7 @@ router.post("/register", async (req, res) => {
     return;
   }
 
-  const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+  const existing = await getDb().select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
   if (existing.length > 0) {
     res.status(409).json({ error: "conflict", message: "Email already in use" });
     return;
@@ -39,7 +39,7 @@ router.post("/register", async (req, res) => {
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-  const [user] = await db.insert(usersTable).values({
+  const [user] = await getDb().insert(usersTable).values({
     email: email.toLowerCase(),
     passwordHash,
     name,
@@ -70,7 +70,7 @@ router.post("/login", async (req, res) => {
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
+  const [user] = await getDb().select().from(usersTable).where(eq(usersTable.email, email.toLowerCase())).limit(1);
   if (!user) {
     res.status(401).json({ error: "unauthorized", message: "Invalid credentials" });
     return;
@@ -113,7 +113,7 @@ router.get("/me", async (req, res) => {
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, decoded.userId)).limit(1);
+  const [user] = await getDb().select().from(usersTable).where(eq(usersTable.id, decoded.userId)).limit(1);
   if (!user) {
     res.status(401).json({ error: "unauthorized", message: "User not found" });
     return;
