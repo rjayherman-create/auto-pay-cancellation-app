@@ -42,46 +42,60 @@ function resolveDbUrl(): string | undefined {
 }
 
 async function initStripe() {
-  const databaseUrl = resolveDbUrl();
-  if (!databaseUrl) {
-    console.warn("[Stripe] No database URL found — skipping Stripe initialization.");
-    return;
-  }
-
-  // Check whether a real Stripe secret key is present
   const stripeKey = process.env.STRIPE_SECRET_KEY ?? "";
   const hasRealStripeKey = stripeKey.startsWith("sk_test_") || stripeKey.startsWith("sk_live_");
 
-  try {
-    const { runMigrations } = await import("stripe-replit-sync");
-    console.log("[Stripe] Running schema migrations...");
-    await runMigrations({ databaseUrl });
-    console.log("[Stripe] Schema ready.");
+  if (!hasRealStripeKey) {
+    console.log("[Stripe] No real Stripe key detected — skipping billing initialization.");
+    console.log("[Stripe] To enable billing: set STRIPE_SECRET_KEY (sk_test_... or sk_live_...).");
+    return;
+  }
 
-    if (!hasRealStripeKey) {
-      // No real Stripe key — billing sync/webhook setup cannot run.
-      console.log("[Stripe] Skipping sync/webhook setup — no real Stripe key detected.");
-      console.log("[Stripe] To enable billing: set STRIPE_SECRET_KEY to your real Stripe secret key (sk_test_... or sk_live_...).");
+  // Replit-managed sync only runs on the Replit platform (requires Replit's
+  // stripe-replit-sync DB schema which Railway does not provision).
+  const isReplit = !!(process.env.REPL_ID || process.env.REPLIT_DOMAINS);
+
+  if (isReplit) {
+    const databaseUrl = resolveDbUrl();
+    if (!databaseUrl) {
+      console.warn("[Stripe] No database URL — skipping Replit sync.");
       return;
     }
+    try {
+      const { runMigrations } = await import("stripe-replit-sync");
+      console.log("[Stripe] Running Replit schema migrations...");
+      await runMigrations({ databaseUrl });
+      console.log("[Stripe] Schema ready.");
 
-    const { getStripeSync } = await import("./stripeClient.js");
-    const stripeSync = await getStripeSync();
+      const { getStripeSync } = await import("./stripeClient.js");
+      const stripeSync = await getStripeSync();
 
-    const domain = process.env.APP_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
-    if (domain) {
-      const webhookUrl = `https://${domain}/api/stripe/webhook`;
-      console.log("[Stripe] Setting up managed webhook:", webhookUrl);
-      const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
-      console.log("[Stripe] Webhook configured:", (result as any)?.webhook?.url || "complete");
+      const domain = process.env.APP_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
+      if (domain) {
+        const webhookUrl = `https://${domain}/api/stripe/webhook`;
+        console.log("[Stripe] Setting up managed webhook:", webhookUrl);
+        const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+        console.log("[Stripe] Webhook configured:", (result as any)?.webhook?.url || "complete");
+      }
+
+      stripeSync
+        .syncBackfill()
+        .then(() => console.log("[Stripe] Data sync complete"))
+        .catch((err: any) => console.error("[Stripe] Sync error:", err.message));
+    } catch (error: any) {
+      console.error("[Stripe] Initialization error:", error.message);
     }
-
-    stripeSync
-      .syncBackfill()
-      .then(() => console.log("[Stripe] Data sync complete"))
-      .catch((err: any) => console.error("[Stripe] Sync error:", err.message));
-  } catch (error: any) {
-    console.error("[Stripe] Initialization error:", error.message);
+  } else {
+    // Outside Replit (Railway, etc.) — use standard Stripe SDK directly.
+    // stripeService.ts already uses getUncachableStripeClient() which works here.
+    try {
+      const { getUncachableStripeClient } = await import("./stripeClient.js");
+      const stripe = await getUncachableStripeClient();
+      const account = await stripe.accounts.retrieve();
+      console.log("[Stripe] Connected to Stripe account:", account.id, "— billing ready.");
+    } catch (error: any) {
+      console.error("[Stripe] Failed to connect to Stripe:", error.message);
+    }
   }
 }
 

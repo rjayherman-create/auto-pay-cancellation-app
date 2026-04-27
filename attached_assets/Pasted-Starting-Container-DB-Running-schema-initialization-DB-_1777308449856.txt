@@ -1,0 +1,79 @@
+Starting Container
+[DB] Running schema initialization...
+[DB] Schema ready.
+[DB] Schema ready.
+> @workspace/api-server@0.0.0 start /app/artifacts/api-server
+> NODE_ENV=production node dist/index.mjs
+[Plaid] Credentials loaded. Environment: sandbox (https://sandbox.plaid.com)
+[Static] Serving frontend from: /app/artifacts/api-server/dist/public
+[Startup] NODE_ENV: production
+[Startup] PORT: 8080
+[Startup] DATABASE_URL: ✓ set
+[Startup] POSTGRES_URL: ✗ not set
+[Startup] PGHOST: ✗ not set
+[Startup] PGDATABASE: ✗ not set
+[Startup] PGUSER: ✗ not set
+[Startup] PLAID_CLIENT_ID: ✓ set
+[Startup] PGPASSWORD: ✗ not set
+[Startup] STRIPE_SECRET_KEY: ✓ set
+[DB] Initializing schema (attempt 1/5)...
+[AutoPay Cancel API] Server listening on port 8080
+[Startup] JWT_SECRET: ✓ set
+[Startup] CLERK_SECRET_KEY: ✓ set
+[Startup] CLERK_PUBLISHABLE_KEY: ✓ set
+[Startup] VITE_CLERK_PUBLISHABLE_KEY: ✓ set (build-time)
+[Stripe] Running schema migrations...
+[Stripe] Schema ready.
+  constraint: undefined,
+  where: undefined,
+{ autoExpandLists: undefined, stripeApiVersion: '2026-02-25.clover' } StripeSync initialized
+  detail: undefined,
+  file: 'parse_relation.c',
+  schema: undefined,
+error: relation "stripe.accounts" does not exist
+  table: undefined,
+  hint: undefined,
+    at file:///app/artifacts/api-server/dist/index.mjs:60:15201
+  column: undefined,
+  position: '16',
+    at async ow.getCurrentAccount (file:///app/artifacts/api-server/dist/index.mjs:177:2560)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+  dataType: undefined,
+  internalPosition: undefined,
+    at async ow.syncBackfill (file:///app/artifacts/api-server/dist/index.mjs:177:18647) {
+    at async Uz.getAccountIdByApiKeyHash (file:///app/artifacts/api-server/dist/index.mjs:172:106)
+  internalQuery: undefined,
+    at async ow.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:177:1675)
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  line: '1445',
+  routine: 'parserOpenTable'
+} Failed to lookup account by API key hash, falling back to API
+error: relation "stripe.accounts" does not exist
+    at file:///app/artifacts/api-server/dist/index.mjs:60:15201
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Uz.upsertAccount (file:///app/artifacts/api-server/dist/index.mjs:158:118)
+    at async ow.upsertAccount (file:///app/artifacts/api-server/dist/index.mjs:177:2233)
+    at async ow.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:177:2169)
+    at async ow.getCurrentAccount (file:///app/artifacts/api-server/dist/index.mjs:177:2560)
+    at async ow.syncBackfill (file:///app/artifacts/api-server/dist/index.mjs:177:18647) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1445',
+  routine: 'parserOpenTable'
+} Failed to upsert account to database
+[Stripe] Sync error: Failed to upsert account to database: relation "stripe.accounts" does not exist
