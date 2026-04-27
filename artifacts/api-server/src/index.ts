@@ -14,7 +14,7 @@ async function initStripe() {
 
   try {
     console.log("[Stripe] Running schema migrations...");
-    await runMigrations({ databaseUrl, schema: "stripe" });
+    await runMigrations({ databaseUrl });
     console.log("[Stripe] Schema ready.");
 
     const stripeSync = await getStripeSync();
@@ -23,7 +23,7 @@ async function initStripe() {
     if (domain) {
       const webhookUrl = `https://${domain}/api/stripe/webhook`;
       console.log("[Stripe] Setting up managed webhook:", webhookUrl);
-      const { webhook } = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
+      const webhook = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
       console.log("[Stripe] Webhook configured:", webhook?.url || "complete");
     }
 
@@ -38,8 +38,10 @@ async function initStripe() {
   }
 }
 
-await initStripe();
+void (async () => {
+  await initStripe();
 
-app.listen(port, () => {
-  console.log(`[AutoPay Cancel API] Server listening on port ${port}`);
-});
+  app.listen(port, () => {
+    console.log(`[AutoPay Cancel API] Server listening on port ${port}`);
+  });
+})();
