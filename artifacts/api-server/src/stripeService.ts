@@ -1,9 +1,9 @@
 import { getUncachableStripeClient } from "./stripeClient.js";
-import { db, usersTable } from "@workspace/db";
+import { getDb, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 export async function getOrCreateStripeCustomer(userId: number, email: string): Promise<string> {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const [user] = await getDb().select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) throw new Error("User not found");
 
   if (user.stripeCustomerId) return user.stripeCustomerId;
@@ -14,7 +14,7 @@ export async function getOrCreateStripeCustomer(userId: number, email: string): 
     metadata: { userId: String(userId) },
   });
 
-  await db
+  await getDb()
     .update(usersTable)
     .set({ stripeCustomerId: customer.id })
     .where(eq(usersTable.id, userId));
