@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setApiTokenProvider } from "@workspace/api-client-react";
+import { getBypassToken } from "@/lib/auth";
 
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -42,8 +43,9 @@ function ClerkTokenSync() {
   const { getToken, isSignedIn } = useClerkAuth();
 
   useEffect(() => {
+    // Don't clear the token provider if a bypass token is active
     if (!isSignedIn) {
-      setApiTokenProvider(null);
+      if (!getBypassToken()) setApiTokenProvider(null);
       return;
     }
     setApiTokenProvider(() => getToken());
@@ -102,12 +104,15 @@ function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
 
   if (!clerkPubKey) {
+    // Allow bypass-login flow even without Clerk configured
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-slate-500 text-sm">
-          Clerk is not configured. Set <code>VITE_CLERK_PUBLISHABLE_KEY</code>.
-        </p>
-      </div>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Router />
+          <Toaster />
+          <SonnerToaster />
+        </TooltipProvider>
+      </QueryClientProvider>
     );
   }
 
