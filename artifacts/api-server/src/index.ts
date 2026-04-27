@@ -1,5 +1,6 @@
 import app from "./app.js";
 import { initDb } from "@workspace/db";
+import { setBillingState } from "./billingState.js";
 
 // ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -50,8 +51,10 @@ async function initStripe() {
   const keyPrefix = stripeKey.startsWith("sk_live_") ? "sk_live_..." : stripeKey.startsWith("sk_test_") ? "sk_test_..." : "none";
   if (hasRealStripeKey) {
     console.log(`[Stripe] Billing ACTIVE (key: ${keyPrefix} | env: ${env})`);
+    setBillingState({ billingActive: true, keyPrefix });
   } else {
     console.log(`[Stripe] Billing INACTIVE — no real Stripe key (env: ${env})`);
+    setBillingState({ billingActive: false });
   }
 
   if (!hasRealStripeKey) {
@@ -71,26 +74,9 @@ async function initStripe() {
       return;
     }
     try {
-      const { runMigrations } = await import("stripe-replit-sync");
-      console.log("[Stripe] Running Replit schema migrations...");
-      await runMigrations({ databaseUrl });
-      console.log("[Stripe] Schema ready.");
-
-      const { getStripeSync } = await import("./stripeClient.js");
-      const stripeSync = await getStripeSync();
-
+      const { runStripeSyncInit } = await import("./stripeSyncInit.js");
       const domain = process.env.APP_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
-      if (domain) {
-        const webhookUrl = `https://${domain}/api/stripe/webhook`;
-        console.log("[Stripe] Setting up managed webhook:", webhookUrl);
-        const result = await stripeSync.findOrCreateManagedWebhook(webhookUrl);
-        console.log("[Stripe] Webhook configured:", (result as any)?.webhook?.url || "complete");
-      }
-
-      stripeSync
-        .syncBackfill()
-        .then(() => console.log("[Stripe] Data sync complete"))
-        .catch((err: any) => console.error("[Stripe] Sync error:", err.message));
+      await runStripeSyncInit({ databaseUrl, domain });
     } catch (error: any) {
       console.error("[Stripe] Initialization error:", error.message);
     }

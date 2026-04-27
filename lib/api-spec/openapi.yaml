@@ -366,8 +366,13 @@ components:
       properties:
         status:
           type: string
+        billingActive:
+          type: boolean
+        keyPrefix:
+          type: string
       required:
         - status
+        - billingActive
 
     ErrorResponse:
       type: object

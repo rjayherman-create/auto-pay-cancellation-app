@@ -22,7 +22,7 @@ import NotFound from "@/pages/not-found";
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const bypassEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
+const bypassEnabled = true; // button always renders; server enforces ENABLE_DEV_BYPASS on its end
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)

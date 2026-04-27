@@ -13,6 +13,8 @@ import * as zod from "zod";
  */
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
+  billingActive: zod.boolean(),
+  keyPrefix: zod.string().optional(),
 });
 
 /**

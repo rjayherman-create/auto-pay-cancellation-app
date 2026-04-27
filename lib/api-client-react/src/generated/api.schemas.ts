@@ -7,6 +7,8 @@
  */
 export interface HealthStatus {
   status: string;
+  billingActive: boolean;
+  keyPrefix?: string;
 }
 
 export interface ErrorResponse {

@@ -7,7 +7,8 @@
     "dev": "NODE_ENV=development tsx ./src/index.ts",
     "build": "tsx ./build.ts",
     "start": "NODE_ENV=production node dist/index.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:billing": "tsx ./src/smoke-test-billing.ts"
   },
   "dependencies": {
     "@clerk/express": "^2.1.9",
