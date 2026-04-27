@@ -21,12 +21,12 @@ if (!plaidAvailable) {
 async function plaidRequest(endpoint: string, body: Record<string, unknown>) {
   const res = await fetch(`${PLAID_BASE}${endpoint}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "PLAID-CLIENT-ID": PLAID_CLIENT_ID!,
-      "PLAID-SECRET": PLAID_SECRET!,
-    },
-    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: PLAID_CLIENT_ID,
+      secret: PLAID_SECRET,
+      ...body,
+    }),
   });
 
   if (!res.ok) {
