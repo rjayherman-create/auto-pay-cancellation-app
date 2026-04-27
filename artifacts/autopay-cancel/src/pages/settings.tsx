@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/lib/auth";
+import { useAuth as useClerkAuth } from "@clerk/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,16 +35,19 @@ interface Subscription {
 
 const API_BASE = "/api";
 
-function authFetch(path: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("auth_token");
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
+function useAuthFetch() {
+  const { getToken } = useClerkAuth();
+  return async function authFetch(path: string, options: RequestInit = {}) {
+    const token = await getToken();
+    return fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  };
 }
 
 const FEATURES = [
@@ -57,6 +61,7 @@ const FEATURES = [
 
 export default function Settings() {
   const { user, logout } = useAuth();
+  const authFetch = useAuthFetch();
   const [location] = useLocation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);

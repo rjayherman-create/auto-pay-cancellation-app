@@ -7,12 +7,11 @@ import documentsRouter from "./documents.js";
 import dashboardRouter from "./dashboard.js";
 import stripeRouter from "./stripe.js";
 import plaidRouter from "./plaid.js";
-import { authLimiter } from "../middlewares/rateLimiter.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use("/auth", authLimiter, authRouter);
+router.use("/auth", authRouter);
 router.use("/accounts", accountsRouter);
 router.use("/payments", paymentsRouter);
 router.use("/documents", documentsRouter);

@@ -271,6 +271,14 @@ async function parseSuccessBody(
   }
 }
 
+type ClerkTokenGetter = (() => Promise<string | null>) | null;
+
+let _clerkTokenGetter: ClerkTokenGetter = null;
+
+export function registerClerkTokenGetter(getter: ClerkTokenGetter): void {
+  _clerkTokenGetter = getter;
+}
+
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
@@ -284,6 +292,17 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+
+  if (!headers.has("authorization") && _clerkTokenGetter) {
+    try {
+      const token = await _clerkTokenGetter();
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+    } catch {
+      // Token fetch failed — proceed without auth header
+    }
+  }
 
   if (
     typeof init.body === "string" &&

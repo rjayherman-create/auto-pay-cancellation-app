@@ -1,29 +1,90 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { getAuth, createClerkClient } from "@clerk/express";
+import { getDb, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
-const JWT_SECRET = process.env.JWT_SECRET || "autopay-cancel-secret-key-dev";
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY,
+});
 
 export interface AuthenticatedRequest extends Request {
   userId?: number;
 }
 
-export function requireAuth(
+export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): void {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "unauthorized", message: "No token provided" });
+): Promise<void> {
+  const { userId: clerkUserId } = getAuth(req);
+
+  if (!clerkUserId) {
+    res.status(401).json({ error: "unauthorized", message: "Authentication required" });
     return;
   }
 
-  const token = authHeader.slice(7);
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-    req.userId = decoded.userId;
-    next();
-  } catch {
-    res.status(401).json({ error: "unauthorized", message: "Invalid token" });
+    // Look up the user in our DB by their Clerk ID
+    const [existing] = await getDb()
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
+
+    if (existing) {
+      req.userId = existing.id;
+      next();
+      return;
+    }
+
+    // Auto-create user on first visit — fetch their profile from Clerk
+    let email = "";
+    let name = "";
+    try {
+      const clerkUser = await clerkClient.users.getUser(clerkUserId);
+      email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+      name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || email.split("@")[0];
+    } catch (profileErr: any) {
+      console.warn("[Auth] Could not fetch Clerk profile for new user:", profileErr.message);
+    }
+
+    const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
+    const [created] = await getDb()
+      .insert(usersTable)
+      .values({
+        clerkId: clerkUserId,
+        email: email || `${clerkUserId}@clerk.local`,
+        name: name || "User",
+        subscriptionStatus: "trial",
+        trialEndsAt,
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (created) {
+      req.userId = created.id;
+      next();
+      return;
+    }
+
+    // Race condition: another request created the user concurrently — re-fetch
+    const [refetched] = await getDb()
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, clerkUserId))
+      .limit(1);
+
+    if (refetched) {
+      req.userId = refetched.id;
+      next();
+      return;
+    }
+
+    res.status(500).json({ error: "internal_error", message: "Failed to provision user" });
+  } catch (err: any) {
+    console.error("[Auth] requireAuth error:", err.message);
+    res.status(500).json({ error: "internal_error", message: "Authentication check failed" });
   }
 }
