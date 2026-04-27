@@ -8,11 +8,50 @@ export interface AuthenticatedRequest extends Request {
   clerkUserId?: string;
 }
 
+const DEV_CLERK_USER_ID = "dev_bypass_user";
+
 export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  // ── Dev bypass (never runs in production) ──────────────────────────────────
+  if (process.env.NODE_ENV !== "production" && req.cookies?.dev_session === "1") {
+    try {
+      let [user] = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.clerkUserId, DEV_CLERK_USER_ID))
+        .limit(1);
+
+      if (!user) {
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+        const [created] = await db
+          .insert(usersTable)
+          .values({
+            clerkUserId: DEV_CLERK_USER_ID,
+            email: "dev@test.local",
+            name: "Dev User",
+            subscriptionStatus: "trial",
+            trialEndsAt,
+          })
+          .onConflictDoUpdate({
+            target: usersTable.email,
+            set: { updatedAt: new Date() },
+          })
+          .returning({ id: usersTable.id });
+        user = created;
+      }
+
+      req.clerkUserId = DEV_CLERK_USER_ID;
+      req.userId = user.id;
+      return next();
+    } catch (err: any) {
+      console.error("[Auth] Dev bypass error:", err.message);
+    }
+  }
+
   const { userId: clerkUserId } = getAuth(req);
 
   if (!clerkUserId) {

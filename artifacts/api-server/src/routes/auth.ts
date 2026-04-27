@@ -69,7 +69,23 @@ router.get("/me", async (req, res) => {
 
 // POST /api/auth/logout — no-op with Clerk (client handles sign-out)
 router.post("/logout", (_req, res) => {
+  res.clearCookie("dev_session");
   res.json({ success: true });
+});
+
+// POST /api/auth/dev-login — ONLY available in development. Sets a cookie that
+// bypasses Clerk so you can test the app without a working auth flow.
+router.post("/dev-login", (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  res.cookie("dev_session", "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  });
+  res.json({ ok: true });
 });
 
 export default router;
