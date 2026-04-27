@@ -1,0 +1,37 @@
+nge
+Apr 27, 2026, 11:19 AM
+Starting Container
+[Startup] PGPASSWORD: ✗ not set
+[Stripe] Running schema migrations...
+[Startup] JWT_SECRET: ✓ set
+[Static] Serving frontend from: /app/artifacts/api-server/dist/public
+[Startup] PGHOST: ✗ not set
+[Stripe] Schema ready.
+[Startup] PLAID_CLIENT_ID: ✓ set
+[Stripe] Running outside Replit — skipping sync/webhook setup.
+[Startup] NODE_ENV: production
+[Startup] PGDATABASE: ✗ not set
+[Startup] STRIPE_SECRET_KEY: ✓ set
+[Stripe] To enable billing: set STRIPE_SECRET_KEY to your real Stripe secret key (sk_test_... or sk_live_...).
+[Startup] PORT: 8080
+[Startup] PGUSER: ✗ not set
+[Startup] DATABASE_URL: ✓ set
+[Startup] POSTGRES_URL: ✗ not set
+> @workspace/api-server@0.0.0 start /app/artifacts/api-server
+[DB] Initializing schema (attempt 1/5)...
+> NODE_ENV=production node dist/index.mjs
+[AutoPay Cancel API] Server listening on port 8080
+[Plaid] Credentials loaded. Environment: sandbox (https://sandbox.plaid.com)
+[DB] Running schema initialization...
+[DB] Schema ready.
+[DB] Schema ready.
+[Plaid] API error: {"display_message":null,"documentation_url":"https://plaid.com/docs/?ref=error#invalid-request-errors","error_code":"INVALID_FIELD","error_message":"client_id must be a properly formatted, non-empty string","error_type":"INVALID_REQUEST","request_id":"fe2bf657b2ed1be","suggested_action":null}
+[Plaid] create-link-token failed: client_id must be a properly formatted, non-empty string
+[Plaid] API error: {"display_message":null,"documentation_url":"https://plaid.com/docs/?ref=error#invalid-request-errors","error_code":"INVALID_FIELD","error_message":"client_id must be a properly formatted, non-empty string","error_type":"INVALID_REQUEST","request_id":"33757f069293890","suggested_action":null}
+[Plaid] create-link-token failed: client_id must be a properly formatted, non-empty string
+[Plaid] API error: {"display_message":null,"documentation_url":"https://plaid.com/docs/?ref=error#invalid-request-errors","error_code":"INVALID_FIELD","error_message":"client_id must be a properly formatted, non-empty string","error_type":"INVALID_REQUEST","request_id":"a0de7d749abdbbc","suggested_action":null}
+[Plaid] create-link-token failed: client_id must be a properly formatted, non-empty string
+[Plaid] API error: {"display_message":null,"documentation_url":"https://plaid.com/docs/?ref=error#invalid-request-errors","error_code":"INVALID_FIELD","error_message":"client_id must be a properly formatted, non-empty string","error_type":"INVALID_REQUEST","request_id":"1d54b4684babb20","suggested_action":null}
+[Plaid] create-link-token failed: client_id must be a properly formatted, non-empty string
+[Plaid] API error: {"display_message":null,"documentation_url":"https://plaid.com/docs/?ref=error#invalid-request-errors","error_code":"INVALID_FIELD","error_message":"client_id must be a properly formatted, non-empty string","error_type":"INVALID_REQUEST","request_id":"50a9a520fd63dd4","suggested_action":null}
+[Plaid] create-link-token failed: client_id must be a properly formatted, non-empty string
