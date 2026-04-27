@@ -81,6 +81,11 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 // ─── Trust proxy (required for rate limiting behind Replit's proxy) ───────────
 app.set("trust proxy", 1);
 
+// ─── Root ────────────────────────────────────────────────────────────────────
+app.get("/", (_req, res) => {
+  res.json({ service: "AutoPay Cancel API", status: "ok", version: "1.0.0" });
+});
+
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use("/api", router);
 
