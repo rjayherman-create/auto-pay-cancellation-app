@@ -1,5 +1,5 @@
 import { useUser, useClerk } from "@clerk/react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 
 export function useAuth() {
   const { isSignedIn, isLoaded } = useUser();
@@ -7,6 +7,7 @@ export function useAuth() {
 
   const { data: profile, isLoading: profileLoading } = useGetMe({
     query: {
+      queryKey: getGetMeQueryKey(),
       enabled: isSignedIn === true,
       retry: false,
     },
