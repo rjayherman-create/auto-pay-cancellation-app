@@ -4,5 +4,6 @@
     node = "22"
 
 [deploy]
+  installCommand = "pnpm install --frozen-lockfile"
   buildCommand = "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/autopay-cancel run build"
   startCommand = "pnpm --filter @workspace/api-server run start"
