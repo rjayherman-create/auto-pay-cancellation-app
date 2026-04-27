@@ -35,12 +35,11 @@ interface Subscription {
 const API_BASE = "/api";
 
 function authFetch(path: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("auth_token");
   return fetch(`${API_BASE}${path}`, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
       ...(options.headers || {}),
     },
   });
