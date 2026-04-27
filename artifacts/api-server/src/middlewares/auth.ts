@@ -1,29 +1,40 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "autopay-cancel-secret-key-dev";
+import { getAuth } from "@clerk/express";
+import { db, usersTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 export interface AuthenticatedRequest extends Request {
   userId?: number;
+  clerkUserId?: string;
 }
 
-export function requireAuth(
+export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): void {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "unauthorized", message: "No token provided" });
+): Promise<void> {
+  const { userId: clerkUserId } = getAuth(req);
+
+  if (!clerkUserId) {
+    res.status(401).json({ error: "unauthorized", message: "Authentication required" });
     return;
   }
 
-  const token = authHeader.slice(7);
+  req.clerkUserId = clerkUserId;
+
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
-    req.userId = decoded.userId;
+    const [user] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.clerkUserId, clerkUserId))
+      .limit(1);
+
+    if (user) {
+      req.userId = user.id;
+    }
     next();
-  } catch {
-    res.status(401).json({ error: "unauthorized", message: "Invalid token" });
+  } catch (err: any) {
+    console.error("[Auth] DB lookup error:", err.message);
+    res.status(500).json({ error: "server_error", message: "Authentication check failed" });
   }
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, logout } = useAuth();
-  
+
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
@@ -15,9 +15,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   if (!user) {
-    return <Redirect to="/login" />;
+    return <Redirect to="/sign-in" />;
   }
 
   const style = {
@@ -37,7 +37,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-sm font-medium text-slate-700 hidden sm:inline-block">
                 {user.name}
               </span>
-              <Button variant="ghost" size="icon" onClick={() => logout()} title="Sign Out" className="text-slate-500 hover:text-red-600 hover:bg-red-50">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => logout()}
+                title="Sign Out"
+                className="text-slate-500 hover:text-red-600 hover:bg-red-50"
+              >
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>

@@ -3,12 +3,17 @@ import cors from "cors";
 import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
+import { clerkMiddleware } from "@clerk/express";
+import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware.js";
 import router from "./routes/index.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
 
 const app: Express = express();
 const isProd = process.env.NODE_ENV === "production";
+
+// ─── Clerk Proxy (must come first, before body parsers) ───────────────────────
+app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 // ─── Security: HTTP Headers ───────────────────────────────────────────────────
 app.use(
@@ -22,8 +27,20 @@ app.use(
         styleSrcElem: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
         fontSrc: ["'self'", "data:", "fonts.gstatic.com"],
         frameSrc: ["'self'", "js.stripe.com", "hooks.stripe.com", "cdn.plaid.com"],
-        connectSrc: ["'self'", "api.stripe.com", "cdn.plaid.com", "*.plaid.com", "production.plaid.com", "sandbox.plaid.com"],
-        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: [
+          "'self'",
+          "api.stripe.com",
+          "cdn.plaid.com",
+          "*.plaid.com",
+          "production.plaid.com",
+          "sandbox.plaid.com",
+          "*.clerk.com",
+          "*.clerk.accounts.dev",
+          "*.clerkstage.com",
+          "clerk.*.replit.dev",
+          "clerk.*.repl.co",
+        ],
+        imgSrc: ["'self'", "data:", "blob:", "https:", "*.clerk.com"],
         mediaSrc: ["'self'", "blob:"],
         workerSrc: ["'self'", "blob:"],
         objectSrc: ["'none'"],
@@ -91,13 +108,14 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 // ─── Trust proxy (required for rate limiting behind Replit's proxy) ───────────
 app.set("trust proxy", 1);
 
+// ─── Clerk Middleware ─────────────────────────────────────────────────────────
+app.use(clerkMiddleware());
+
 // ─── API Routes ──────────────────────────────────────────────────────────────
 app.use("/api", router);
 
 // ─── Serve Frontend (production only) ────────────────────────────────────────
 if (isProd) {
-  // In the bundled dist/index.mjs, import.meta.url points to dist/index.mjs
-  // so "public" resolves to dist/public — where the frontend build lands
   const distDir = path.dirname(fileURLToPath(import.meta.url));
   const frontendDir = path.join(distDir, "public");
 
@@ -105,7 +123,6 @@ if (isProd) {
 
   app.use(express.static(frontendDir, { maxAge: "1d" }));
 
-  // SPA fallback — all non-API routes serve index.html (Express 5 requires named wildcard)
   app.get(/(.*)/, (_req, res) => {
     res.sendFile(path.join(frontendDir, "index.html"));
   });

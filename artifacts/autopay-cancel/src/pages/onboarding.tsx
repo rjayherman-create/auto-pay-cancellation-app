@@ -23,7 +23,7 @@ export default function Onboarding() {
   // Redirect to register if not logged in, skip onboarding if already has accounts
   useEffect(() => {
     if (!isLoading && !user) {
-      navigate("/register");
+      navigate("/sign-in");
     }
   }, [isLoading, user]);
 

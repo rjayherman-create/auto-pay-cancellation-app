@@ -103,7 +103,7 @@ export async function initDb(): Promise<void> {
       CREATE TABLE IF NOT EXISTS users (
         id                    SERIAL PRIMARY KEY,
         email                 TEXT NOT NULL UNIQUE,
-        password_hash         TEXT NOT NULL,
+        password_hash         TEXT,
         name                  TEXT NOT NULL,
         subscription_status   subscription_status NOT NULL DEFAULT 'trial',
         trial_ends_at         TIMESTAMP,
@@ -112,6 +112,12 @@ export async function initDb(): Promise<void> {
         created_at            TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at            TIMESTAMP NOT NULL DEFAULT NOW()
       );
+
+      -- Clerk migration: add clerk_user_id column if missing, allow null passwords
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS clerk_user_id TEXT UNIQUE;
+      DO $$ BEGIN
+        ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+      EXCEPTION WHEN others THEN NULL; END $$;
 
       CREATE TABLE IF NOT EXISTS bank_accounts (
         id                  SERIAL PRIMARY KEY,
