@@ -1,14 +1,17 @@
 import { Router, type IRouter } from "express";
 import { HealthCheckResponse } from "@workspace/api-zod";
 import { getBillingState } from "../billingState.js";
+import { getDbState } from "../dbState.js";
 
 const router: IRouter = Router();
 
 router.get("/healthz", (_req, res) => {
   const billing = getBillingState();
+  const db = getDbState();
   const data = HealthCheckResponse.parse({
     status: "ok",
     billingActive: billing.billingActive,
+    dbReady: db.dbReady,
     ...(billing.keyPrefix !== undefined ? { keyPrefix: billing.keyPrefix } : {}),
   });
   res.json(data);

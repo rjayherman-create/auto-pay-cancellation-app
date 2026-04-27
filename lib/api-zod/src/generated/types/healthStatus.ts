@@ -9,5 +9,6 @@
 export interface HealthStatus {
   status: string;
   billingActive: boolean;
+  dbReady: boolean;
   keyPrefix?: string;
 }

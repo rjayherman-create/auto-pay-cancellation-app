@@ -75,12 +75,13 @@ function resolveEnv(): {
 
   const domain =
     process.env.APP_DOMAIN ||
+    process.env.RAILWAY_PUBLIC_DOMAIN ||
     process.env.REPLIT_DOMAINS?.split(",")[0] ||
     undefined;
 
   if (!domain && process.env.CI === "true") {
     fail(
-      "APP_DOMAIN (or REPLIT_DOMAINS) is not set — webhook registration cannot be validated in CI"
+      "APP_DOMAIN (or RAILWAY_PUBLIC_DOMAIN / REPLIT_DOMAINS) is not set — webhook registration cannot be validated in CI"
     );
     process.exit(1);
   }
@@ -124,7 +125,8 @@ async function testStripeSyncClient() {
 
 /**
  * 3. Full sync path — calls runStripeSyncInit() which is the same function
- *    invoked by initStripe() in src/index.ts.  Exercises:
+ *    invoked by initStripe() in src/index.ts for BOTH the Replit and
+ *    non-Replit (Railway, etc.) code paths.  Exercises:
  *      - runMigrations  (stripe schema setup)
  *      - getStripeSync  (StripeSync client from stripeClient.ts)
  *      - findOrCreateManagedWebhook (webhook registration)
@@ -181,6 +183,62 @@ async function testFullSyncPath(databaseUrl: string, domain?: string) {
   }
 }
 
+/**
+ * 4. Non-Replit init path — verifies the else-branch of initStripe() in
+ *    src/index.ts (the path taken on Railway and other non-Replit platforms).
+ *
+ *    That branch now calls runStripeSyncInit() with the domain resolved from
+ *    APP_DOMAIN or RAILWAY_PUBLIC_DOMAIN, so this section confirms that:
+ *      - Webhook registration succeeds in the non-Replit context
+ *      - The registered URL matches the Railway / APP_DOMAIN endpoint
+ *
+ *    Unlike section [3], this section uses domain resolution that mirrors the
+ *    non-Replit branch exactly (APP_DOMAIN → RAILWAY_PUBLIC_DOMAIN).
+ */
+async function testNonReplitInitPath(databaseUrl: string) {
+  console.log("\n[4] Non-Replit init path (Railway / APP_DOMAIN webhook registration)");
+
+  const domain =
+    process.env.APP_DOMAIN ||
+    process.env.RAILWAY_PUBLIC_DOMAIN ||
+    undefined;
+
+  if (!domain) {
+    console.log(
+      "  ℹ  APP_DOMAIN and RAILWAY_PUBLIC_DOMAIN are not set — " +
+        "webhook URL assertion skipped (non-Replit domain unknown)"
+    );
+  }
+
+  let result: Awaited<ReturnType<typeof runStripeSyncInit>> | null = null;
+  try {
+    result = await runStripeSyncInit({ databaseUrl, domain, awaitBackfill: true });
+  } catch (err) {
+    fail("runStripeSyncInit() threw an error in the non-Replit path", err);
+    return;
+  }
+
+  if (result.migrationsRan) {
+    pass("DB migrations completed (non-Replit path)");
+  } else {
+    fail("DB migrations did not complete in the non-Replit path");
+  }
+
+  if (domain) {
+    if (result.webhookUrl) {
+      pass(`Webhook registered via non-Replit path: ${result.webhookUrl}`);
+    } else {
+      fail("findOrCreateManagedWebhook() returned no URL in the non-Replit path");
+    }
+  }
+
+  if (result.syncDispatched) {
+    pass("syncBackfill() completed in the non-Replit path");
+  } else {
+    fail("syncBackfill() was not dispatched in the non-Replit path");
+  }
+}
+
 // ─── main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -203,8 +261,13 @@ async function main() {
   // 2. StripeSync client construction via stripeClient.ts
   await testStripeSyncClient();
 
-  // 3. Full sync path — the same production function initStripe() calls
+  // 3. Full sync path — the same production function initStripe() calls for
+  //    both Replit and non-Replit environments
   await testFullSyncPath(databaseUrl, domain);
+
+  // 4. Non-Replit init path — explicitly exercises the Railway/non-Replit
+  //    branch of initStripe() using APP_DOMAIN / RAILWAY_PUBLIC_DOMAIN
+  await testNonReplitInitPath(databaseUrl);
 
   // ─── summary ───────────────────────────────────────────────────────────────
   console.log("\n=== Summary ===");

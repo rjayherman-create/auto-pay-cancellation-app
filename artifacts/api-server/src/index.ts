@@ -1,6 +1,7 @@
 import app from "./app.js";
 import { initDb } from "@workspace/db";
 import { setBillingState } from "./billingState.js";
+import { setDbState } from "./dbState.js";
 
 // ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -81,15 +82,34 @@ async function initStripe() {
       console.error("[Stripe] Initialization error:", error.message);
     }
   } else {
-    // Outside Replit (Railway, etc.) — use standard Stripe SDK directly.
-    // stripeService.ts already uses getUncachableStripeClient() which works here.
+    // Outside Replit (Railway, etc.) — register the webhook and sync data
+    // the same way as the Replit path.  runStripeSyncInit() runs DB
+    // migrations, calls findOrCreateManagedWebhook(), and dispatches
+    // syncBackfill() — it works on any platform with a PostgreSQL DB.
+    const databaseUrl = resolveDbUrl();
+    if (!databaseUrl) {
+      // No DB available — fall back to a basic connectivity check so we at
+      // least confirm the key is valid, but skip webhook registration.
+      console.warn("[Stripe] No database URL — skipping webhook registration and sync.");
+      try {
+        const { getUncachableStripeClient } = await import("./stripeClient.js");
+        const stripe = await getUncachableStripeClient();
+        const account = await stripe.accounts.retrieve();
+        console.log("[Stripe] Connected to Stripe account:", account.id, "— billing ready (no DB, webhook skipped).");
+      } catch (error: any) {
+        console.error("[Stripe] Failed to connect to Stripe:", error.message);
+      }
+      return;
+    }
     try {
-      const { getUncachableStripeClient } = await import("./stripeClient.js");
-      const stripe = await getUncachableStripeClient();
-      const account = await stripe.accounts.retrieve();
-      console.log("[Stripe] Connected to Stripe account:", account.id, "— billing ready.");
+      const { runStripeSyncInit } = await import("./stripeSyncInit.js");
+      const domain =
+        process.env.APP_DOMAIN ||
+        process.env.RAILWAY_PUBLIC_DOMAIN ||
+        undefined;
+      await runStripeSyncInit({ databaseUrl, domain });
     } catch (error: any) {
-      console.error("[Stripe] Failed to connect to Stripe:", error.message);
+      console.error("[Stripe] Initialization error:", error.message);
     }
   }
 }
@@ -107,6 +127,7 @@ async function initBackground() {
       console.log(`[DB] Initializing schema (attempt ${attempt}/${maxAttempts})...`);
       await initDb();
       console.log("[DB] Schema ready.");
+      setDbState({ dbReady: true });
       break;
     } catch (err: any) {
       console.error(`[DB] Init attempt ${attempt} failed:`, err.message);
@@ -116,6 +137,7 @@ async function initBackground() {
         await new Promise((r) => setTimeout(r, delay));
       } else {
         console.error("[DB] All init attempts failed — server will respond with DB errors until connection recovers.");
+        setDbState({ dbReady: false });
       }
     }
   }
