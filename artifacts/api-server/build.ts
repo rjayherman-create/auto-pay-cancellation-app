@@ -1,7 +1,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { build as esbuild } from "esbuild";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, cp } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,6 +70,17 @@ async function buildAll() {
     external: externals,
     logLevel: "info",
   });
+
+  // Copy frontend build output
+  const frontendDistDir = path.resolve(__dirname, "../autopay-cancel/dist/public");
+  const apiPublicDir = path.resolve(distDir, "public");
+
+  try {
+    await cp(frontendDistDir, apiPublicDir, { recursive: true });
+    console.log("Frontend files copied to API server dist/public");
+  } catch (err) {
+    console.warn("Frontend build not found or already copied:", (err as Error).message);
+  }
 }
 
 buildAll().catch((err) => {
