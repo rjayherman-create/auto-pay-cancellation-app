@@ -1,22 +1,46 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { useGetRecurringPayments, GetRecurringPaymentsStatus } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
+import { Search, SlidersHorizontal, ChevronRight, FlaskConical } from "lucide-react";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import AutopaySavingsDashboard from "@/components/AutopaySavingsDashboard";
 import type { AutopayItem } from "@/lib/autopayTools";
 
+const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
 export default function Subscriptions() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState<GetRecurringPaymentsStatus | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [seeding, setSeeding] = useState(false);
+  const [seedMsg, setSeedMsg] = useState('');
+
+  async function loadDemoData() {
+    setSeeding(true);
+    setSeedMsg('');
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/seed-demo`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to seed demo data");
+      setSeedMsg(`✓ ${data.message}`);
+      queryClient.invalidateQueries();
+    } catch (err: any) {
+      setSeedMsg(`✗ ${err.message}`);
+    } finally {
+      setSeeding(false);
+    }
+  }
   
   const { data: payments, isLoading, error } = useGetRecurringPayments(
     filter === 'all' ? undefined : { status: filter }
@@ -59,6 +83,21 @@ export default function Subscriptions() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Subscriptions</h1>
           <p className="text-muted-foreground mt-2">Manage and cancel your recurring payments.</p>
+          <div className="mt-2 flex items-center gap-3 flex-wrap">
+            <button
+              onClick={loadDemoData}
+              disabled={seeding}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors disabled:opacity-60"
+            >
+              <FlaskConical className="h-3.5 w-3.5" />
+              {seeding ? "Loading demo data…" : "Load Demo Data"}
+            </button>
+            {seedMsg && (
+              <span className={`text-xs font-medium ${seedMsg.startsWith("✓") ? "text-emerald-700" : "text-red-600"}`}>
+                {seedMsg}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative">
