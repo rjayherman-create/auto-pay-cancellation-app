@@ -44,8 +44,8 @@ export async function requireAuth(
       const clerkUser = await clerkClient.users.getUser(clerkUserId);
       email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
       name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || email.split("@")[0];
-    } catch {
-      // If Clerk profile fetch fails, proceed with empty defaults
+    } catch (profileErr: any) {
+      console.warn("[Auth] Could not fetch Clerk profile for new user:", profileErr.message);
     }
 
     const trialEndsAt = new Date();

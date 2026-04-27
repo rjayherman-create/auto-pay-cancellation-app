@@ -13,6 +13,8 @@ export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   clerkId: text("clerk_id").unique(),
   email: text("email").notNull().unique(),
+  // passwordHash is nullable to support Clerk-authenticated users (who have no local password).
+  // Legacy rows with a hash remain valid; new Clerk users are created without one.
   passwordHash: text("password_hash"),
   name: text("name").notNull(),
   subscriptionStatus: subscriptionStatusEnum("subscription_status")
