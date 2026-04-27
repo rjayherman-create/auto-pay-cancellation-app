@@ -2,3 +2,7 @@
   [options.packages]
     pnpm = "10.26.1"
     node = "22"
+
+[deploy]
+  buildCommand = "pnpm --filter @workspace/api-server run build"
+  startCommand = "pnpm --filter @workspace/api-server run start"

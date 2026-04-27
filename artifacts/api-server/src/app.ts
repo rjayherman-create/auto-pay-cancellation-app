@@ -28,6 +28,7 @@ app.use(
 const allowedOrigins = [
   /\.replit\.dev$/,
   /\.repl\.co$/,
+  /\.railway\.app$/,
   /localhost/,
 ];
 

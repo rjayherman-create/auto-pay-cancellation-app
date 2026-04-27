@@ -1,5 +1,13 @@
 import app from "./app.js";
 
+// ─── Startup diagnostics (Railway debugging) ─────────────────────────────────
+console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
+console.log("[Startup] PORT:", process.env.PORT ?? "(not set)");
+console.log("[Startup] DATABASE_URL:", process.env.DATABASE_URL ? "✓ set" : "✗ NOT SET");
+console.log("[Startup] JWT_SECRET:", process.env.JWT_SECRET ? "✓ set" : "✗ not set (using dev default)");
+console.log("[Startup] PLAID_CLIENT_ID:", process.env.PLAID_CLIENT_ID ? "✓ set" : "✗ not set");
+console.log("[Startup] STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY ? "✓ set" : "✗ not set");
+
 const rawPort = process.env["PORT"];
 if (!rawPort) throw new Error("PORT environment variable is required.");
 
