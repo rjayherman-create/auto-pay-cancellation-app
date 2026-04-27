@@ -5,10 +5,23 @@ import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+const DEV_CLERK_USER_ID = "dev_bypass_user";
+
+function getEffectiveClerkUserId(req: any): string | null {
+  const bypassAllowed =
+    process.env.NODE_ENV === "development" ||
+    process.env.ENABLE_DEV_BYPASS === "true";
+  if (bypassAllowed && req.cookies?.dev_session === "1") {
+    return DEV_CLERK_USER_ID;
+  }
+  const { userId } = getAuth(req);
+  return userId ?? null;
+}
+
 // GET /api/auth/me — returns our internal profile, creating it on first access
 router.get("/me", async (req, res) => {
   try {
-    const { userId: clerkUserId } = getAuth(req);
+    const clerkUserId = getEffectiveClerkUserId(req);
 
     if (!clerkUserId) {
       res.status(401).json({ error: "unauthorized", message: "Not signed in" });
@@ -22,20 +35,25 @@ router.get("/me", async (req, res) => {
       .limit(1);
 
     if (!user) {
-      // First access — pull info from Clerk and create our record
-      const clerkUser = await clerkClient.users.getUser(clerkUserId);
-      const email =
-        clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
-          ?.emailAddress ||
-        clerkUser.emailAddresses[0]?.emailAddress ||
-        "";
-      const name =
-        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
-        email.split("@")[0] ||
-        "User";
-
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
+      let email = "dev@test.local";
+      let name = "Dev User";
+
+      // Only call Clerk API for real users — dev bypass has no Clerk account
+      if (clerkUserId !== DEV_CLERK_USER_ID) {
+        const clerkUser = await clerkClient.users.getUser(clerkUserId);
+        email =
+          clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
+            ?.emailAddress ||
+          clerkUser.emailAddresses[0]?.emailAddress ||
+          "";
+        name =
+          [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+          email.split("@")[0] ||
+          "User";
+      }
 
       [user] = await db
         .insert(usersTable)
@@ -74,9 +92,12 @@ router.post("/logout", (_req, res) => {
 });
 
 // POST /api/auth/dev-login — Sets a cookie that bypasses Clerk auth.
-// Only active when ENABLE_DEV_BYPASS=true is set in environment variables.
+// Active in development OR when ENABLE_DEV_BYPASS=true is explicitly set.
 router.post("/dev-login", (req, res) => {
-  if (process.env.ENABLE_DEV_BYPASS !== "true") {
+  const allowed =
+    process.env.NODE_ENV === "development" ||
+    process.env.ENABLE_DEV_BYPASS === "true";
+  if (!allowed) {
     res.status(404).json({ error: "not_found" });
     return;
   }
