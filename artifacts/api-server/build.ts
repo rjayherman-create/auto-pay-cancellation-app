@@ -39,7 +39,8 @@ const allowlist = [
 
 async function buildAll() {
   const distDir = path.resolve(__dirname, "dist");
-  await rm(distDir, { recursive: true, force: true });
+  // Only remove the server bundle — preserve dist/public (frontend build output)
+  await rm(path.join(distDir, "index.mjs"), { force: true });
 
   console.log("building server...");
   const pkgPath = path.resolve(__dirname, "package.json");
