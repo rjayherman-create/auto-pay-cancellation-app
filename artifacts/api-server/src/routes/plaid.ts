@@ -155,12 +155,12 @@ router.post("/exchange-token", requireAuth, async (req: AuthenticatedRequest, re
   for (const r of recurring) {
     await db.insert(recurringPaymentsTable).values({
       userId,
-      bankAccountId: account.id,
+      accountId: account.id,
       merchantName: r.name,
-      amount: String(r.amount),
-      billingCycle: r.cycle,
+      amount: r.amount,
+      frequency: r.cycle as "weekly" | "monthly" | "quarterly" | "annually",
       category: r.category,
-      detectedAt: new Date(),
+      nextChargeDate: nextChargeDateFromCycle(r.cycle),
     }).onConflictDoNothing();
   }
 
@@ -176,6 +176,15 @@ router.post("/exchange-token", requireAuth, async (req: AuthenticatedRequest, re
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function nextChargeDateFromCycle(cycle: string): string {
+  const d = new Date();
+  if (cycle === "weekly") d.setDate(d.getDate() + 7);
+  else if (cycle === "quarterly") d.setMonth(d.getMonth() + 3);
+  else if (cycle === "annually") d.setFullYear(d.getFullYear() + 1);
+  else d.setMonth(d.getMonth() + 1);
+  return d.toISOString().split("T")[0];
+}
 
 function detectRecurring(transactions: any[]) {
   const merchantAmounts = new Map<string, number[]>();
@@ -226,11 +235,11 @@ function guessCategory(name: string): string {
 
 async function seedDemoPayments(userId: number, accountId: number) {
   const demos = [
-    { merchantName: "Netflix", amount: "15.99", billingCycle: "monthly", category: "streaming" },
-    { merchantName: "Spotify", amount: "9.99", billingCycle: "monthly", category: "music" },
-    { merchantName: "Adobe Creative Cloud", amount: "54.99", billingCycle: "monthly", category: "software" },
-    { merchantName: "Amazon Prime", amount: "14.99", billingCycle: "monthly", category: "shopping" },
-    { merchantName: "Planet Fitness", amount: "24.99", billingCycle: "monthly", category: "fitness" },
+    { merchantName: "Netflix", amount: 15.99, frequency: "monthly" as const, category: "streaming" },
+    { merchantName: "Spotify", amount: 9.99, frequency: "monthly" as const, category: "music" },
+    { merchantName: "Adobe Creative Cloud", amount: 54.99, frequency: "monthly" as const, category: "software" },
+    { merchantName: "Amazon Prime", amount: 14.99, frequency: "monthly" as const, category: "shopping" },
+    { merchantName: "Planet Fitness", amount: 24.99, frequency: "monthly" as const, category: "fitness" },
   ];
 
   for (const demo of demos) {
@@ -247,9 +256,9 @@ async function seedDemoPayments(userId: number, accountId: number) {
     if (existing.length === 0) {
       await db.insert(recurringPaymentsTable).values({
         userId,
-        bankAccountId: accountId,
+        accountId,
         ...demo,
-        detectedAt: new Date(),
+        nextChargeDate: nextChargeDateFromCycle(demo.frequency),
       });
     }
   }
