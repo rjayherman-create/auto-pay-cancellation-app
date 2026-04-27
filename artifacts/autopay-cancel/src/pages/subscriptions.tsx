@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
-import { useGetRecurringPayments, GetRecurringPaymentsStatus } from "@workspace/api-client-react";
+import { useGetRecurringPayments, GetRecurringPaymentsStatus, getApiBearerToken } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,13 @@ export default function Subscriptions() {
     setSeeding(true);
     setSeedMsg('');
     try {
+      const token = await getApiBearerToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch(`${API_BASE}/api/admin/seed-demo`, {
         method: "POST",
         credentials: "include",
+        headers,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to seed demo data");

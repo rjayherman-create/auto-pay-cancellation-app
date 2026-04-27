@@ -4,4 +4,5 @@ export {
   setApiTokenProvider,
   setApiAuthToken,
   getApiAuthToken,
+  getApiBearerToken,
 } from "./custom-fetch";
