@@ -1,4 +1,5 @@
 import app from "./app.js";
+import { initDb } from "@workspace/db";
 
 // ─── Startup diagnostics (Railway debugging) ─────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -71,6 +72,14 @@ async function initStripe() {
   } catch (error: any) {
     console.error("[Stripe] Initialization error:", error.message);
   }
+}
+
+// ─── Initialize DB schema (creates tables if missing) ────────────────────────
+try {
+  await initDb();
+} catch (err: any) {
+  console.error("[Startup] FATAL: Could not initialize database:", err.message);
+  process.exit(1);
 }
 
 await initStripe();
