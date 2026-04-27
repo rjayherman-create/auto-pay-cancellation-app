@@ -1,0 +1,810 @@
+You are upgrading an already-working autopay cancellation app.
+
+IMPORTANT:
+Do NOT rebuild the app.
+Do NOT remove the existing working Plaid connection.
+Do NOT change the existing deployment setup.
+Do NOT break the existing cancellation letter generator.
+Add these upgrades around the current app:
+
+APP GOAL:
+The app should no longer feel like only a one-time cancellation letter generator.
+It should become a simple "Autopay Savings Dashboard" that helps users:
+1. see recurring payments
+2. calculate monthly/yearly cost
+3. create cancellation letters
+4. track cancellation status
+5. create follow-up refund/dispute letters if charges continue
+
+==================================================
+FEATURES TO ADD
+==================================================
+
+Add these 4 main features:
+
+1. SAVINGS DASHBOARD
+Show at the top of the dashboard:
+- Total recurring payments detected
+- Estimated monthly autopay total
+- Estimated yearly autopay total
+- Potential yearly savings from selected cancellations
+- Number of items marked for cancellation
+
+Use existing transaction/recurring payment data if it exists.
+If the backend does not yet expose recurring payment data, create a safe frontend fallback using the existing displayed autopay/subscription list.
+
+2. CANCELLATION STATUS TRACKER
+Each recurring payment row/card should have a status field:
+
+- Not Started
+- Letter Created
+- Sent
+- Waiting
+- Canceled
+- Still Charging
+
+Users should be able to update the status from a dropdown.
+Persist this status in localStorage first so it works immediately without database migration.
+Use key format:
+autopay_cancel_status_{merchantName}
+
+3. EXTRA LETTER TYPES
+Keep the current cancellation letter.
+Add two more letter types:
+
+A. Refund Request Letter
+Purpose:
+User wants to cancel and ask for a refund of a recent charge.
+
+B. Continued Charge Dispute Letter
+Purpose:
+User already canceled but the company kept charging them.
+
+The user should be able to choose letter type from:
+- Cancel Subscription
+- Request Refund
+- Dispute Continued Charges
+
+The generated letter should update based on the selected type.
+
+4. PROOF VAULT / NOTES
+For each recurring payment, add:
+- notes field
+- date letter sent
+- confirmation number
+- optional company contact field
+
+Persist these in localStorage first.
+Use key format:
+autopay_proof_{merchantName}
+
+==================================================
+UI / DESIGN REQUIREMENTS
+==================================================
+
+Add a polished section called:
+
+"Autopay Savings Dashboard"
+
+Use clean cards:
+- Monthly Autopays
+- Yearly Cost
+- Possible Savings
+- Items to Cancel
+
+Use plain, professional language.
+
+Add helper copy:
+
+"Find recurring payments, generate cancellation letters, track follow-ups, and organize proof if a company keeps charging you."
+
+Use warning/disclaimer text:
+
+"This tool helps organize cancellation requests and follow-up letters. It does not guarantee that a company will cancel a service or issue a refund."
+
+Make it mobile friendly.
+
+Do not make the app legally risky.
+Avoid language like:
+- guaranteed cancellation
+- we stop charges
+- we force refunds
+- legal demand
+
+Use language like:
+- cancellation request
+- follow-up request
+- refund request
+- organize proof
+- track status
+
+==================================================
+IMPLEMENTATION INSTRUCTIONS
+==================================================
+
+Search the project for the current dashboard and cancellation letter generator.
+
+Likely files may include:
+- src/App.tsx
+- src/pages/Dashboard.tsx
+- src/pages/Home.tsx
+- src/components/*
+- artifacts/*/src/*
+- client/src/*
+- app/src/*
+
+Find where recurring payments or subscriptions are displayed.
+
+Do the smallest safe implementation.
+
+If the app uses React:
+Create or update these components:
+
+1. AutopaySavingsDashboard.tsx
+2. CancellationStatusTracker.tsx
+3. LetterTypeSelector.tsx
+4. ProofVault.tsx
+
+If the app does not have a component folder, create one in the existing frontend src folder.
+
+==================================================
+CODE TO ADD
+==================================================
+
+Create a reusable helper file:
+
+src/lib/autopayTools.ts
+
+with the following code, adjusted to the existing import/export style if needed:
+
+--------------------------------------------------
+
+export type CancellationStatus =
+  | "Not Started"
+  | "Letter Created"
+  | "Sent"
+  | "Waiting"
+  | "Canceled"
+  | "Still Charging";
+
+export type LetterType =
+  | "Cancel Subscription"
+  | "Request Refund"
+  | "Dispute Continued Charges";
+
+export type AutopayItem = {
+  id?: string;
+  merchantName: string;
+  amount: number;
+  frequency?: string;
+  nextChargeDate?: string;
+};
+
+export type ProofVaultData = {
+  notes?: string;
+  dateSent?: string;
+  confirmationNumber?: string;
+  companyContact?: string;
+};
+
+export function money(value: number): string {
+  const safe = Number.isFinite(value) ? value : 0;
+  return safe.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+}
+
+export function getMonthlyAmount(item: AutopayItem): number {
+  const amount = Number(item.amount || 0);
+  const frequency = String(item.frequency || "monthly").toLowerCase();
+
+  if (frequency.includes("year")) return amount / 12;
+  if (frequency.includes("annual")) return amount / 12;
+  if (frequency.includes("week")) return amount * 4.33;
+  if (frequency.includes("day")) return amount * 30;
+  return amount;
+}
+
+export function calculateAutopaySummary(items: AutopayItem[]) {
+  const monthlyTotal = items.reduce((sum, item) => sum + getMonthlyAmount(item), 0);
+  const yearlyTotal = monthlyTotal * 12;
+
+  return {
+    count: items.length,
+    monthlyTotal,
+    yearlyTotal,
+  };
+}
+
+function safeKey(value: string): string {
+  return String(value || "unknown")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+export function getStatusStorageKey(merchantName: string): string {
+  return `autopay_cancel_status_${safeKey(merchantName)}`;
+}
+
+export function getProofStorageKey(merchantName: string): string {
+  return `autopay_proof_${safeKey(merchantName)}`;
+}
+
+export function loadStatus(merchantName: string): CancellationStatus {
+  if (typeof window === "undefined") return "Not Started";
+  const saved = window.localStorage.getItem(getStatusStorageKey(merchantName));
+  const allowed: CancellationStatus[] = [
+    "Not Started",
+    "Letter Created",
+    "Sent",
+    "Waiting",
+    "Canceled",
+    "Still Charging",
+  ];
+  return allowed.includes(saved as CancellationStatus)
+    ? (saved as CancellationStatus)
+    : "Not Started";
+}
+
+export function saveStatus(merchantName: string, status: CancellationStatus) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(getStatusStorageKey(merchantName), status);
+}
+
+export function loadProof(merchantName: string): ProofVaultData {
+  if (typeof window === "undefined") return {};
+  try {
+    const saved = window.localStorage.getItem(getProofStorageKey(merchantName));
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveProof(merchantName: string, data: ProofVaultData) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(getProofStorageKey(merchantName), JSON.stringify(data));
+}
+
+export function generateAutopayLetter(params: {
+  letterType: LetterType;
+  merchantName: string;
+  customerName?: string;
+  customerEmail?: string;
+  accountLastFour?: string;
+  amount?: number;
+  dateSent?: string;
+}): string {
+  const {
+    letterType,
+    merchantName,
+    customerName,
+    customerEmail,
+    accountLastFour,
+    amount,
+    dateSent,
+  } = params;
+
+  const today = new Date().toLocaleDateString();
+  const name = customerName || "[Your Name]";
+  const email = customerEmail || "[Your Email]";
+  const lastFour = accountLastFour || "[Last 4 digits or account identifier]";
+  const chargeAmount = amount ? money(amount) : "[Charge Amount]";
+  const sentDate = dateSent || "[Date cancellation was sent]";
+
+  if (letterType === "Request Refund") {
+    return `${today}
+
+To: ${merchantName}
+
+Subject: Cancellation and Refund Request
+
+Hello,
+
+I am requesting cancellation of my account, membership, or recurring payment with ${merchantName}.
+
+Customer Name: ${name}
+Customer Email: ${email}
+Account / Card Identifier: ${lastFour}
+
+I am also requesting a refund of the recent charge in the amount of ${chargeAmount}. I did not intend to continue this service and would like the account canceled to prevent any future recurring charges.
+
+Please confirm in writing that:
+1. My account or recurring payment has been canceled.
+2. No future charges will be made.
+3. My refund request has been reviewed.
+
+Thank you,
+
+${name}`;
+  }
+
+  if (letterType === "Dispute Continued Charges") {
+    return `${today}
+
+To: ${merchantName}
+
+Subject: Continued Charge After Cancellation
+
+Hello,
+
+I previously requested cancellation of my account, membership, or recurring payment with ${merchantName}.
+
+Customer Name: ${name}
+Customer Email: ${email}
+Account / Card Identifier: ${lastFour}
+Original Cancellation Date: ${sentDate}
+Continued Charge Amount: ${chargeAmount}
+
+Despite my cancellation request, I noticed that I was charged again. I am requesting that you review this account, stop any future recurring charges, and refund any charges made after my cancellation request.
+
+Please provide written confirmation that:
+1. The recurring payment has been canceled.
+2. No future charges will be made.
+3. The continued charge has been reviewed for refund.
+
+Thank you,
+
+${name}`;
+  }
+
+  return `${today}
+
+To: ${merchantName}
+
+Subject: Cancellation Request
+
+Hello,
+
+I am requesting cancellation of my account, membership, subscription, or recurring payment with ${merchantName}.
+
+Customer Name: ${name}
+Customer Email: ${email}
+Account / Card Identifier: ${lastFour}
+
+Please cancel this service and stop all future recurring charges.
+
+Please confirm in writing that:
+1. My account or recurring payment has been canceled.
+2. No future charges will be made.
+3. The cancellation effective date has been recorded.
+
+Thank you,
+
+${name}`;
+}
+
+--------------------------------------------------
+
+==================================================
+CREATE COMPONENT
+==================================================
+
+Create:
+
+src/components/AutopaySavingsDashboard.tsx
+
+Use this code and adjust imports if the project uses aliases like "@/lib/..." instead of "../lib/...":
+
+--------------------------------------------------
+
+import React, { useMemo, useState } from "react";
+import {
+  AutopayItem,
+  CancellationStatus,
+  LetterType,
+  calculateAutopaySummary,
+  generateAutopayLetter,
+  loadProof,
+  loadStatus,
+  money,
+  saveProof,
+  saveStatus,
+} from "../lib/autopayTools";
+
+type Props = {
+  items: AutopayItem[];
+  customerName?: string;
+  customerEmail?: string;
+};
+
+const statuses: CancellationStatus[] = [
+  "Not Started",
+  "Letter Created",
+  "Sent",
+  "Waiting",
+  "Canceled",
+  "Still Charging",
+];
+
+const letterTypes: LetterType[] = [
+  "Cancel Subscription",
+  "Request Refund",
+  "Dispute Continued Charges",
+];
+
+export default function AutopaySavingsDashboard({
+  items,
+  customerName,
+  customerEmail,
+}: Props) {
+  const [selectedMerchant, setSelectedMerchant] = useState<string>(
+    items?.[0]?.merchantName || ""
+  );
+  const [letterType, setLetterType] = useState<LetterType>("Cancel Subscription");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const summary = useMemo(() => calculateAutopaySummary(items || []), [items]);
+
+  const selectedItem =
+    items.find((item) => item.merchantName === selectedMerchant) || items?.[0];
+
+  const itemsToCancel = items.filter((item) => {
+    const status = loadStatus(item.merchantName);
+    return status !== "Canceled" && status !== "Not Started";
+  }).length;
+
+  const possibleSavings = items
+    .filter((item) => loadStatus(item.merchantName) !== "Canceled")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const generatedLetter = selectedItem
+    ? generateAutopayLetter({
+        letterType,
+        merchantName: selectedItem.merchantName,
+        customerName,
+        customerEmail,
+        amount: selectedItem.amount,
+        dateSent: loadProof(selectedItem.merchantName).dateSent,
+      })
+    : "";
+
+  function updateStatus(merchantName: string, status: CancellationStatus) {
+    saveStatus(merchantName, status);
+    setRefreshKey((value) => value + 1);
+  }
+
+  function updateProof(
+    merchantName: string,
+    field: "notes" | "dateSent" | "confirmationNumber" | "companyContact",
+    value: string
+  ) {
+    const existing = loadProof(merchantName);
+    saveProof(merchantName, {
+      ...existing,
+      [field]: value,
+    });
+    setRefreshKey((value) => value + 1);
+  }
+
+  function copyLetter() {
+    if (!generatedLetter) return;
+    navigator.clipboard.writeText(generatedLetter);
+    if (selectedItem) {
+      saveStatus(selectedItem.merchantName, "Letter Created");
+      setRefreshKey((value) => value + 1);
+    }
+  }
+
+  if (!items || items.length === 0) {
+    return (
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <h2 className="text-2xl font-bold">Autopay Savings Dashboard</h2>
+        <p className="mt-2 text-gray-600">
+          Connect or load recurring payments to see savings, generate letters,
+          and track cancellation follow-ups.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-2xl font-bold">Autopay Savings Dashboard</h2>
+          <p className="text-gray-600">
+            Find recurring payments, generate cancellation letters, track
+            follow-ups, and organize proof if a company keeps charging you.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-4">
+          <div className="rounded-xl border bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Recurring Payments</p>
+            <p className="mt-1 text-2xl font-bold">{summary.count}</p>
+          </div>
+
+          <div className="rounded-xl border bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Monthly Autopays</p>
+            <p className="mt-1 text-2xl font-bold">
+              {money(summary.monthlyTotal)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Yearly Cost</p>
+            <p className="mt-1 text-2xl font-bold">
+              {money(summary.yearlyTotal)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Items in Progress</p>
+            <p className="mt-1 text-2xl font-bold">{itemsToCancel}</p>
+          </div>
+        </div>
+
+        <p className="mt-4 rounded-xl bg-yellow-50 p-3 text-sm text-yellow-900">
+          This tool helps organize cancellation requests and follow-up letters.
+          It does not guarantee that a company will cancel a service or issue a
+          refund.
+        </p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <h3 className="text-xl font-bold">Recurring Payments</h3>
+          <div className="mt-4 space-y-4">
+            {items.map((item) => {
+              const status = loadStatus(item.merchantName);
+              const proof = loadProof(item.merchantName);
+
+              return (
+                <div
+                  key={`${item.merchantName}-${refreshKey}`}
+                  className="rounded-xl border p-4"
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <p className="font-semibold">{item.merchantName}</p>
+                      <p className="text-sm text-gray-500">
+                        {money(Number(item.amount || 0))}
+                        {item.frequency ? ` / ${item.frequency}` : ""}
+                      </p>
+                      {item.nextChargeDate ? (
+                        <p className="text-sm text-gray-500">
+                          Next charge: {item.nextChargeDate}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <select
+                      className="rounded-lg border px-3 py-2 text-sm"
+                      value={status}
+                      onChange={(event) =>
+                        updateStatus(
+                          item.merchantName,
+                          event.target.value as CancellationStatus
+                        )
+                      }
+                    >
+                      {statuses.map((statusOption) => (
+                        <option key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <input
+                      className="rounded-lg border px-3 py-2 text-sm"
+                      placeholder="Date letter sent"
+                      defaultValue={proof.dateSent || ""}
+                      onBlur={(event) =>
+                        updateProof(
+                          item.merchantName,
+                          "dateSent",
+                          event.target.value
+                        )
+                      }
+                    />
+                    <input
+                      className="rounded-lg border px-3 py-2 text-sm"
+                      placeholder="Confirmation number"
+                      defaultValue={proof.confirmationNumber || ""}
+                      onBlur={(event) =>
+                        updateProof(
+                          item.merchantName,
+                          "confirmationNumber",
+                          event.target.value
+                        )
+                      }
+                    />
+                    <input
+                      className="rounded-lg border px-3 py-2 text-sm md:col-span-2"
+                      placeholder="Company contact, email, phone, or cancellation link"
+                      defaultValue={proof.companyContact || ""}
+                      onBlur={(event) =>
+                        updateProof(
+                          item.merchantName,
+                          "companyContact",
+                          event.target.value
+                        )
+                      }
+                    />
+                    <textarea
+                      className="min-h-[80px] rounded-lg border px-3 py-2 text-sm md:col-span-2"
+                      placeholder="Notes / proof / follow-up details"
+                      defaultValue={proof.notes || ""}
+                      onBlur={(event) =>
+                        updateProof(
+                          item.merchantName,
+                          "notes",
+                          event.target.value
+                        )
+                      }
+                    />
+                  </div>
+
+                  <button
+                    className="mt-3 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
+                    onClick={() => setSelectedMerchant(item.merchantName)}
+                  >
+                    Create Letter
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <h3 className="text-xl font-bold">Letter Generator</h3>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <label className="text-sm">
+              <span className="mb-1 block font-medium">Company</span>
+              <select
+                className="w-full rounded-lg border px-3 py-2"
+                value={selectedMerchant}
+                onChange={(event) => setSelectedMerchant(event.target.value)}
+              >
+                {items.map((item) => (
+                  <option key={item.merchantName} value={item.merchantName}>
+                    {item.merchantName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-sm">
+              <span className="mb-1 block font-medium">Letter Type</span>
+              <select
+                className="w-full rounded-lg border px-3 py-2"
+                value={letterType}
+                onChange={(event) =>
+                  setLetterType(event.target.value as LetterType)
+                }
+              >
+                {letterTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <textarea
+            className="mt-4 min-h-[420px] w-full rounded-xl border p-4 font-mono text-sm"
+            value={generatedLetter}
+            readOnly
+          />
+
+          <button
+            className="mt-4 rounded-lg bg-black px-4 py-2 font-semibold text-white"
+            onClick={copyLetter}
+          >
+            Copy Letter
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+--------------------------------------------------
+
+==================================================
+CONNECT IT TO EXISTING DASHBOARD
+==================================================
+
+Find the page where recurring payments/subscriptions are shown.
+
+Import:
+
+import AutopaySavingsDashboard from "./components/AutopaySavingsDashboard";
+
+or if nested:
+
+import AutopaySavingsDashboard from "../components/AutopaySavingsDashboard";
+
+Then pass the existing recurring payment list into it.
+
+The component expects items shaped like:
+
+[
+  {
+    merchantName: "Netflix",
+    amount: 15.99,
+    frequency: "monthly",
+    nextChargeDate: "2026-05-15"
+  }
+]
+
+If the existing data has different field names, map it like this:
+
+const autopayItems = existingSubscriptions.map((item) => ({
+  merchantName:
+    item.merchantName ||
+    item.name ||
+    item.merchant ||
+    item.description ||
+    "Unknown Merchant",
+  amount:
+    Number(item.amount || item.monthlyAmount || item.price || item.cost || 0),
+  frequency:
+    item.frequency || item.billingCycle || "monthly",
+  nextChargeDate:
+    item.nextChargeDate || item.next_payment_date || item.date || "",
+}));
+
+Then render:
+
+<AutopaySavingsDashboard
+  items={autopayItems}
+  customerName={user?.name}
+  customerEmail={user?.email}
+/>
+
+Place it above or near the current cancellation letter section.
+
+==================================================
+IF THERE IS NO RECURRING PAYMENT VARIABLE
+==================================================
+
+If you cannot find the exact variable, create a temporary adapter near the existing dashboard using whatever data is already displayed.
+
+Do NOT hardcode fake data in production.
+Only use fake sample data if the app currently has no connected data at all, and label it clearly as demo data.
+
+==================================================
+BACKEND OPTIONAL
+==================================================
+
+Do not add a database migration yet.
+Use localStorage for status/proof so it works immediately.
+
+Later we can move:
+- status
+- notes
+- date sent
+- confirmation number
+- company contact
+
+into the database.
+
+==================================================
+FINAL CHECKS
+==================================================
+
+After implementation:
+
+1. Run the app.
+2. Confirm existing Plaid connection still works.
+3. Confirm existing cancellation letter still works.
+4. Confirm the new dashboard appears.
+5. Confirm status changes persist after page refresh.
+6. Confirm proof fields persist after page refresh.
+7. Confirm all three letter types generate different letters.
+8. Confirm build passes.
+9. Do not leave TypeScript errors.
+10. Do not remove existing routes or API calls.
+
+Commit message:
+
+Add autopay savings dashboard, cancellation tracker, proof vault, and follow-up letters
