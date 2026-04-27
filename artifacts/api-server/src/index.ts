@@ -48,8 +48,9 @@ async function initStripe() {
     return;
   }
 
-  // Determine if running inside Replit (where the managed Stripe proxy key works)
-  const isReplit = !!(process.env.REPLIT_DOMAINS || process.env.REPL_ID || process.env.REPLIT_DEPLOYMENT_ID);
+  // Check whether a real Stripe secret key is present
+  const stripeKey = process.env.STRIPE_SECRET_KEY ?? "";
+  const hasRealStripeKey = stripeKey.startsWith("sk_test_") || stripeKey.startsWith("sk_live_");
 
   try {
     const { runMigrations } = await import("stripe-replit-sync");
@@ -57,10 +58,9 @@ async function initStripe() {
     await runMigrations({ databaseUrl });
     console.log("[Stripe] Schema ready.");
 
-    if (!isReplit) {
-      // In Railway/production: schema is ready but Replit proxy key won't work.
-      // Stripe billing will work once a real sk_test_/sk_live_ key is configured.
-      console.log("[Stripe] Running outside Replit — skipping sync/webhook setup.");
+    if (!hasRealStripeKey) {
+      // No real Stripe key — billing sync/webhook setup cannot run.
+      console.log("[Stripe] Skipping sync/webhook setup — no real Stripe key detected.");
       console.log("[Stripe] To enable billing: set STRIPE_SECRET_KEY to your real Stripe secret key (sk_test_... or sk_live_...).");
       return;
     }
