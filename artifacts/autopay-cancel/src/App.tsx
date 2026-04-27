@@ -45,7 +45,7 @@ function ClerkTokenInjector() {
 function Router() {
   return (
     <Switch>
-      <Route path="/sign-in" component={SignIn} />
+      <Route path="/sign-in/:rest*" component={SignIn} />
       <Route path="/login"><Redirect to="/sign-in" /></Route>
       <Route path="/register"><Redirect to="/sign-in" /></Route>
       <Route path="/onboarding" component={Onboarding} />
