@@ -271,6 +271,11 @@ async function parseSuccessBody(
   }
 }
 
+function getStoredAuthToken(): string | null {
+  if (typeof localStorage === "undefined") return null;
+  return localStorage.getItem("auth_token");
+}
+
 export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
@@ -284,6 +289,13 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+
+  if (!headers.has("authorization")) {
+    const token = getStoredAuthToken();
+    if (token) {
+      headers.set("authorization", `Bearer ${token}`);
+    }
+  }
 
   if (
     typeof init.body === "string" &&
