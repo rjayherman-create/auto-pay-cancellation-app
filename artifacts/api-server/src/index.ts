@@ -35,6 +35,7 @@ function resolveDbUrl(): string | undefined {
       const d = process.env.PGDATABASE || process.env.POSTGRES_DB;
       if (h && u && pw && d)
         return `postgresql://${u}:${encodeURIComponent(pw)}@${h}:${p}/${d}`;
+      return undefined;
     })()
   );
 }
