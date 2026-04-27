@@ -1,10 +1,9 @@
 import app from "./app.js";
 import { initDb } from "@workspace/db";
 
-// ─── Startup diagnostics (Railway debugging) ─────────────────────────────────
+// ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
 console.log("[Startup] PORT:", process.env.PORT ?? "(not set)");
-// DB connection — check all possible names
 console.log("[Startup] DATABASE_URL:", process.env.DATABASE_URL ? "✓ set" : "✗ NOT SET");
 console.log("[Startup] POSTGRES_URL:", process.env.POSTGRES_URL ? "✓ set" : "✗ not set");
 console.log("[Startup] PGHOST:", process.env.PGHOST ? `✓ ${process.env.PGHOST}` : "✗ not set");
@@ -17,7 +16,6 @@ console.log("[Startup] STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY ? "✓
 
 const rawPort = process.env["PORT"];
 if (!rawPort) throw new Error("PORT environment variable is required.");
-
 const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT: "${rawPort}"`);
 
@@ -28,7 +26,6 @@ function resolveDbUrl(): string | undefined {
   if (process.env.DB_URL) return process.env.DB_URL;
   if (process.env.PGURL) return process.env.PGURL;
 
-  // Construct from individual PG* vars (Railway Postgres plugin injects these)
   const h = process.env.PGHOST || process.env.POSTGRES_HOST;
   const p = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
   const u = process.env.PGUSER || process.env.POSTGRES_USER;
@@ -37,7 +34,6 @@ function resolveDbUrl(): string | undefined {
   if (h && u && pw && d) {
     return `postgresql://${u}:${encodeURIComponent(pw)}@${h}:${p}/${d}`;
   }
-
   return undefined;
 }
 
@@ -47,7 +43,6 @@ async function initStripe() {
     console.warn("[Stripe] No database URL found — skipping Stripe initialization.");
     return;
   }
-
   try {
     const { runMigrations } = await import("stripe-replit-sync");
     console.log("[Stripe] Running schema migrations...");
@@ -68,22 +63,39 @@ async function initStripe() {
     stripeSync
       .syncBackfill()
       .then(() => console.log("[Stripe] Data sync complete"))
-      .catch((err) => console.error("[Stripe] Sync error:", err.message));
+      .catch((err: any) => console.error("[Stripe] Sync error:", err.message));
   } catch (error: any) {
     console.error("[Stripe] Initialization error:", error.message);
   }
 }
 
-// ─── Initialize DB schema (creates tables if missing) ────────────────────────
-try {
-  await initDb();
-} catch (err: any) {
-  console.error("[Startup] FATAL: Could not initialize database:", err.message);
-  process.exit(1);
-}
-
-await initStripe();
-
+// ─── Start server immediately so Railway health checks pass ──────────────────
 app.listen(port, () => {
   console.log(`[AutoPay Cancel API] Server listening on port ${port}`);
 });
+
+// ─── DB init + Stripe run in background (non-fatal) ──────────────────────────
+async function initBackground() {
+  const maxAttempts = 5;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(`[DB] Initializing schema (attempt ${attempt}/${maxAttempts})...`);
+      await initDb();
+      console.log("[DB] Schema ready.");
+      break;
+    } catch (err: any) {
+      console.error(`[DB] Init attempt ${attempt} failed:`, err.message);
+      if (attempt < maxAttempts) {
+        const delay = attempt * 2000;
+        console.log(`[DB] Retrying in ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
+        console.error("[DB] All init attempts failed — server will respond with DB errors until connection recovers.");
+      }
+    }
+  }
+
+  await initStripe();
+}
+
+initBackground().catch((err) => console.error("[Background init] Unexpected error:", err.message));
