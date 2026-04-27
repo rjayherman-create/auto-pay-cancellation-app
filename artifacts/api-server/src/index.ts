@@ -12,6 +12,9 @@ console.log("[Startup] PGDATABASE:", process.env.PGDATABASE?.trim() ? `✓ ${pro
 console.log("[Startup] PGUSER:", process.env.PGUSER?.trim() ? "✓ set" : "✗ not set");
 console.log("[Startup] PGPASSWORD:", process.env.PGPASSWORD?.trim() ? "✓ set" : "✗ not set");
 console.log("[Startup] JWT_SECRET:", process.env.JWT_SECRET ? "✓ set" : "✗ not set (using dev default)");
+console.log("[Startup] CLERK_SECRET_KEY:", process.env.CLERK_SECRET_KEY ? "✓ set" : "✗ NOT SET — auth will fail");
+console.log("[Startup] CLERK_PUBLISHABLE_KEY:", process.env.CLERK_PUBLISHABLE_KEY ? "✓ set" : "✗ not set");
+console.log("[Startup] VITE_CLERK_PUBLISHABLE_KEY:", process.env.VITE_CLERK_PUBLISHABLE_KEY ? "✓ set (build-time)" : "✗ not set (must be set before build)");
 console.log("[Startup] PLAID_CLIENT_ID:", process.env.PLAID_CLIENT_ID ? "✓ set" : "✗ not set");
 console.log("[Startup] STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY ? "✓ set" : "✗ not set");
 
