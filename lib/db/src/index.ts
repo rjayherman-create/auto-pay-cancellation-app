@@ -7,19 +7,24 @@ const { Pool } = pg;
 let _pool: pg.Pool | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
 
+function env(key: string): string | undefined {
+  const v = process.env[key];
+  return v && v.trim() ? v.trim() : undefined;
+}
+
 function resolveConnectionString(): string {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
-  if (process.env.POSTGRESQL_URL) return process.env.POSTGRESQL_URL;
-  if (process.env.DB_URL) return process.env.DB_URL;
-  if (process.env.PGURL) return process.env.PGURL;
+  if (env("DATABASE_URL")) return env("DATABASE_URL")!;
+  if (env("POSTGRES_URL")) return env("POSTGRES_URL")!;
+  if (env("POSTGRESQL_URL")) return env("POSTGRESQL_URL")!;
+  if (env("DB_URL")) return env("DB_URL")!;
+  if (env("PGURL")) return env("PGURL")!;
 
   // Construct from individual PG* vars (Railway Postgres plugin injects these)
-  const host = process.env.PGHOST || process.env.POSTGRES_HOST;
-  const port = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
-  const user = process.env.PGUSER || process.env.POSTGRES_USER;
-  const password = process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD;
-  const database = process.env.PGDATABASE || process.env.POSTGRES_DB;
+  const host = env("PGHOST") || env("POSTGRES_HOST");
+  const port = env("PGPORT") || env("POSTGRES_PORT") || "5432";
+  const user = env("PGUSER") || env("POSTGRES_USER");
+  const password = env("PGPASSWORD") || env("POSTGRES_PASSWORD");
+  const database = env("PGDATABASE") || env("POSTGRES_DB");
 
   if (host && user && password && database) {
     console.log("[DB] Constructed connection string from PG* env vars");
