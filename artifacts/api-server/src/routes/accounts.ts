@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, bankAccountsTable, recurringPaymentsTable } from "@workspace/db";
+import { getDb, bankAccountsTable, recurringPaymentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
@@ -7,7 +7,7 @@ const router: IRouter = Router();
 
 router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const accounts = await db
+  const accounts = await getDb()
     .select()
     .from(bankAccountsTable)
     .where(and(eq(bankAccountsTable.userId, userId), eq(bankAccountsTable.isActive, true)));
@@ -37,7 +37,7 @@ router.post("/", requireAuth, async (req: AuthenticatedRequest, res) => {
     return;
   }
 
-  const [account] = await db
+  const [account] = await getDb()
     .insert(bankAccountsTable)
     .values({ userId, bankName, accountType, lastFour })
     .returning();
@@ -59,7 +59,7 @@ router.delete("/:accountId", requireAuth, async (req: AuthenticatedRequest, res)
   const userId = req.userId!;
   const accountId = parseInt(req.params.accountId as string, 10);
 
-  const [account] = await db
+  const [account] = await getDb()
     .select()
     .from(bankAccountsTable)
     .where(and(eq(bankAccountsTable.id, accountId), eq(bankAccountsTable.userId, userId)))
@@ -70,7 +70,7 @@ router.delete("/:accountId", requireAuth, async (req: AuthenticatedRequest, res)
     return;
   }
 
-  await db
+  await getDb()
     .update(bankAccountsTable)
     .set({ isActive: false })
     .where(eq(bankAccountsTable.id, accountId));
@@ -137,7 +137,7 @@ async function seedPaymentsForAccount(userId: number, accountId: number) {
   ];
 
   for (const p of samplePayments) {
-    await db.insert(recurringPaymentsTable).values({
+    await getDb().insert(recurringPaymentsTable).values({
       userId,
       accountId,
       ...p,

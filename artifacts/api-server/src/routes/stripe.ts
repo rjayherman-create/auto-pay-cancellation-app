@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable } from "@workspace/db";
+import { getDb, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import {
@@ -15,7 +15,7 @@ const router: IRouter = Router();
 // GET /api/stripe/plans — list active products+prices from the synced stripe schema
 router.get("/plans", async (_req, res) => {
   try {
-    const rows = await db.execute(sql`
+    const rows = await getDb().execute(sql`
       WITH paginated_products AS (
         SELECT id, name, description, metadata, active
         FROM stripe.products
@@ -75,7 +75,7 @@ router.get("/plans", async (_req, res) => {
 // GET /api/stripe/subscription — user's current subscription status
 router.get("/subscription", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const [user] = await getDb().select().from(usersTable).where(eq(usersTable.id, userId));
 
   if (!user?.stripeCustomerId) {
     res.json({ subscription: null, status: "none" });
@@ -113,7 +113,7 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res) => 
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const [user] = await getDb().select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) {
     res.status(404).json({ error: "not_found", message: "User not found" });
     return;
@@ -137,7 +137,7 @@ router.post("/checkout", requireAuth, async (req: AuthenticatedRequest, res) => 
 // POST /api/stripe/portal — manage billing via Stripe Customer Portal
 router.post("/portal", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const [user] = await getDb().select().from(usersTable).where(eq(usersTable.id, userId));
 
   if (!user?.stripeCustomerId) {
     res.status(400).json({

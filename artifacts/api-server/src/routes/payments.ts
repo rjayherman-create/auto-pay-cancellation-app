@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, recurringPaymentsTable, userActionsTable } from "@workspace/db";
+import { getDb, recurringPaymentsTable, userActionsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
@@ -22,7 +22,7 @@ router.get("/", requireAuth, async (req: AuthenticatedRequest, res) => {
     }
   }
 
-  const payments = await db
+  const payments = await getDb()
     .select()
     .from(recurringPaymentsTable)
     .where(and(...conditions));
@@ -49,7 +49,7 @@ router.get("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) =>
   const userId = req.userId!;
   const paymentId = parseInt(req.params.paymentId as string, 10);
 
-  const [payment] = await db
+  const [payment] = await getDb()
     .select()
     .from(recurringPaymentsTable)
     .where(and(eq(recurringPaymentsTable.id, paymentId), eq(recurringPaymentsTable.userId, userId)))
@@ -86,7 +86,7 @@ router.patch("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) 
     return;
   }
 
-  const [payment] = await db
+  const [payment] = await getDb()
     .select()
     .from(recurringPaymentsTable)
     .where(and(eq(recurringPaymentsTable.id, paymentId), eq(recurringPaymentsTable.userId, userId)))
@@ -97,7 +97,7 @@ router.patch("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) 
     return;
   }
 
-  const [updated] = await db
+  const [updated] = await getDb()
     .update(recurringPaymentsTable)
     .set({ status, updatedAt: new Date() })
     .where(eq(recurringPaymentsTable.id, paymentId))
@@ -105,7 +105,7 @@ router.patch("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) 
 
   // Log the action
   if (status === "cancelled") {
-    await db.insert(userActionsTable).values({
+    await getDb().insert(userActionsTable).values({
       userId,
       type: "cancelled",
       merchantName: payment.merchantName,
@@ -113,7 +113,7 @@ router.patch("/:paymentId", requireAuth, async (req: AuthenticatedRequest, res) 
       description: `Successfully cancelled ${payment.merchantName} subscription ($${payment.amount}/month)`,
     });
   } else if (status === "disputed") {
-    await db.insert(userActionsTable).values({
+    await getDb().insert(userActionsTable).values({
       userId,
       type: "disputed",
       merchantName: payment.merchantName,
@@ -142,7 +142,7 @@ router.get("/:paymentId/workflow", requireAuth, async (req: AuthenticatedRequest
   const userId = req.userId!;
   const paymentId = parseInt(req.params.paymentId as string, 10);
 
-  const [payment] = await db
+  const [payment] = await getDb()
     .select()
     .from(recurringPaymentsTable)
     .where(and(eq(recurringPaymentsTable.id, paymentId), eq(recurringPaymentsTable.userId, userId)))

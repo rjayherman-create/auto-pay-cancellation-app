@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, recurringPaymentsTable, bankAccountsTable, userActionsTable } from "@workspace/db";
+import { getDb, recurringPaymentsTable, bankAccountsTable, userActionsTable } from "@workspace/db";
 import { eq, and, sum } from "drizzle-orm";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
@@ -9,19 +9,19 @@ router.get("/summary", requireAuth, async (req: AuthenticatedRequest, res) => {
   const userId = req.userId!;
 
   const [activePayments, cancelledPayments, accounts, recentActions] = await Promise.all([
-    db
+    getDb()
       .select()
       .from(recurringPaymentsTable)
       .where(and(eq(recurringPaymentsTable.userId, userId), eq(recurringPaymentsTable.status, "active"))),
-    db
+    getDb()
       .select()
       .from(recurringPaymentsTable)
       .where(and(eq(recurringPaymentsTable.userId, userId), eq(recurringPaymentsTable.status, "cancelled"))),
-    db
+    getDb()
       .select()
       .from(bankAccountsTable)
       .where(and(eq(bankAccountsTable.userId, userId), eq(bankAccountsTable.isActive, true))),
-    db
+    getDb()
       .select()
       .from(userActionsTable)
       .where(eq(userActionsTable.userId, userId))

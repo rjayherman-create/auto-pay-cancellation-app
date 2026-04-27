@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, bankAccountsTable, recurringPaymentsTable } from "@workspace/db";
+import { getDb, bankAccountsTable, recurringPaymentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
@@ -85,7 +85,7 @@ router.post("/exchange-token", requireAuth, async (req: AuthenticatedRequest, re
 
   // Demo mode — simulate connecting
   if (!plaidAvailable || public_token === "demo-link-token") {
-    const [account] = await db
+    const [account] = await getDb()
       .insert(bankAccountsTable)
       .values({
         userId,
@@ -125,7 +125,7 @@ router.post("/exchange-token", requireAuth, async (req: AuthenticatedRequest, re
   const plaidAccounts = accountsData.accounts || [];
   const firstAccount = plaidAccounts[0];
 
-  const [account] = await db
+  const [account] = await getDb()
     .insert(bankAccountsTable)
     .values({
       userId,
@@ -153,7 +153,7 @@ router.post("/exchange-token", requireAuth, async (req: AuthenticatedRequest, re
 
   // Upsert recurring payments
   for (const r of recurring) {
-    await db.insert(recurringPaymentsTable).values({
+    await getDb().insert(recurringPaymentsTable).values({
       userId,
       accountId: account.id,
       merchantName: r.name,
@@ -243,7 +243,7 @@ async function seedDemoPayments(userId: number, accountId: number) {
   ];
 
   for (const demo of demos) {
-    const existing = await db
+    const existing = await getDb()
       .select()
       .from(recurringPaymentsTable)
       .where(
@@ -254,7 +254,7 @@ async function seedDemoPayments(userId: number, accountId: number) {
       );
 
     if (existing.length === 0) {
-      await db.insert(recurringPaymentsTable).values({
+      await getDb().insert(recurringPaymentsTable).values({
         userId,
         accountId,
         ...demo,
