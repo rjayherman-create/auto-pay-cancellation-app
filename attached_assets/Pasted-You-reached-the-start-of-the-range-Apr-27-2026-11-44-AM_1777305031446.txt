@@ -1,0 +1,85 @@
+You reached the start of the range
+Apr 27, 2026, 11:44 AM
+scheduling build on Metal builder "production-builderv3-us-west1-s5b4"
+unpacking archive
+2.8 MB
+11ms
+uploading snapshot
+1.5 MB
+using build driver railpack-v0.23.0
+                   
+╭─────────────────╮
+│ Railpack 0.23.0 │
+╰─────────────────╯
+ 
+  ↳ Detected Node
+  ↳ Using pnpm package manager
+  ↳ Found workspace with 8 packages
+  ↳ Installing pnpm@10.26.1 with Corepack
+            
+  Packages  
+  ──────────
+  pnpm  │  10.26.1  │  package.json > packageManager (10.26.1)
+  node  │  22.22.2  │  package.json > engines > node (>=22)
+            
+  Steps     
+  ──────────
+  ▸ install
+    $ npm i -g corepack@latest && corepack enable && corepack prepare --activate
+    $ pnpm install --frozen-lockfile --prefer-offline
+         
+  ▸ build
+    $ pnpm run build
+            
+  Deploy    
+  ──────────
+    $ pnpm --filter @workspace/api-server start
+ 
+
+load build definition from ./railpack-plan.json
+0ms
+
+install apt packages: libatomic1
+2s
+Processing triggers for libc-bin (2.36-9+deb12u13) ...
+
+copy / /app, package.json
+263ms
+
+npm i -g corepack@latest && corepack enable && corepack prepare --activate
+3s
+Preparing pnpm@10.26.1 for immediate activation...
+
+copy /etc/mise/config.toml, /usr/local/bin/mise, /mise/installs, /mise/shims, /root/.local/state/mise cached
+0ms
+
+mkdir -p /app/node_modules/.cache
+500ms
+
+pnpm install --frozen-lockfile --prefer-offline
+5s
+Done in 3.4s using pnpm v10.26.1
+
+copy / /app
+932ms
+
+pnpm run build
+10s
+> workspace@0.0.0 build /app
+> pnpm run typecheck && pnpm -r --filter "!@workspace/mockup-sandbox" --if-present run build
+> workspace@0.0.0 typecheck:libs /app
+> tsc --build
+Scope: 4 of 9 workspace projects
+artifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/mockup-sandbox typecheck$ tsc -p tsconfig.json --noEmit
+scripts typecheck: Done
+artifacts/autopay-cancel typecheck: src/lib/auth.tsx(9,5): error TS2741: Property 'queryKey' is missing in type '{ enabled: boolean; retry: false; }' but required in type 'UseQueryOptions<User, ErrorType<ErrorResponse>, User, readonly unknown[]>'.
+
+artifacts/autopay-cancel typecheck: src/pages/login.tsx(12,11): error TS2339: Property 'login' does not exist on type '{ user: { id: number; email: string; name: string; subscriptionStatus: UserSubscriptionStatus; trialEndsAt: string | undefined; createdAt: string; } | null; isLoading: boolean; logout: () => Promise<...>; }'.
+
+artifacts/autopay-cancel typecheck: Failed
+/app/artifacts/autopay-cancel:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/autopay-cancel@0.0.0 typecheck: `tsc -p tsconfig.json --noEmit`
+Exit status 2
+ ELIFECYCLE  Command failed with exit code 2.
+ ELIFECYCLE  Command failed with exit code 2.
