@@ -1,0 +1,76 @@
+Starting Container
+> NODE_ENV=production node dist/index.mjs
+[Plaid] Credentials loaded. Environment: sandbox (https://sandbox.plaid.com)
+[Static] Serving frontend from: /app/artifacts/api-server/dist/public
+[Startup] NODE_ENV: production
+[Startup] PORT: 8080
+[Startup] DATABASE_URL: ✓ set
+[Startup] POSTGRES_URL: ✗ not set
+> @workspace/api-server@0.0.0 start /app/artifacts/api-server
+[Startup] PGHOST: ✗ not set
+[Startup] PGDATABASE: ✗ not set
+[Startup] PGUSER: ✗ not set
+[Startup] PGPASSWORD: ✗ not set
+[Startup] JWT_SECRET: ✓ set
+[Startup] PLAID_CLIENT_ID: ✓ set
+[Startup] STRIPE_SECRET_KEY: ✓ set
+[DB] Initializing schema (attempt 1/5)...
+[AutoPay Cancel API] Server listening on port 8080
+[DB] Running schema initialization...
+[DB] Schema ready.
+[DB] Schema ready.
+[Stripe] Running schema migrations...
+[Stripe] Schema ready.
+{ autoExpandLists: undefined, stripeApiVersion: '2026-02-25.clover' } StripeSync initialized
+error: relation "stripe.accounts" does not exist
+  dataType: undefined,
+    at async iS.syncBackfill (file:///app/artifacts/api-server/dist/index.mjs:179:18650) {
+  constraint: undefined,
+  length: 114,
+  severity: 'ERROR',
+  file: 'parse_relation.c',
+  column: undefined,
+  detail: undefined,
+  where: undefined,
+    at file:///app/artifacts/api-server/dist/index.mjs:62:15235
+  line: '1445',
+  code: '42P01',
+  hint: undefined,
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+  schema: undefined,
+    at async iS.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:179:1678)
+  routine: 'parserOpenTable'
+  internalPosition: undefined,
+  position: '16',
+  table: undefined,
+    at async g9.getAccountIdByApiKeyHash (file:///app/artifacts/api-server/dist/index.mjs:174:106)
+} Failed to lookup account by API key hash, falling back to API
+    at async iS.getCurrentAccount (file:///app/artifacts/api-server/dist/index.mjs:179:2563)
+  internalQuery: undefined,
+error: relation "stripe.accounts" does not exist
+    at async g9.upsertAccount (file:///app/artifacts/api-server/dist/index.mjs:160:118)
+    at async iS.upsertAccount (file:///app/artifacts/api-server/dist/index.mjs:179:2236)
+    at async iS.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:179:2172)
+    at async iS.getCurrentAccount (file:///app/artifacts/api-server/dist/index.mjs:179:2563)
+  routine: 'parserOpenTable'
+  table: undefined,
+    at async iS.syncBackfill (file:///app/artifacts/api-server/dist/index.mjs:179:18650) {
+} Failed to upsert account to database
+  length: 114,
+  column: undefined,
+  severity: 'ERROR',
+  code: '42P01',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  detail: undefined,
+  hint: undefined,
+  line: '1445',
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+    at file:///app/artifacts/api-server/dist/index.mjs:62:15235
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[Stripe] Sync error: Failed to upsert account to database: relation "stripe.accounts" does not exist
