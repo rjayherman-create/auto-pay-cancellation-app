@@ -3,7 +3,13 @@ import app from "./app.js";
 // ─── Startup diagnostics (Railway debugging) ─────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
 console.log("[Startup] PORT:", process.env.PORT ?? "(not set)");
+// DB connection — check all possible names
 console.log("[Startup] DATABASE_URL:", process.env.DATABASE_URL ? "✓ set" : "✗ NOT SET");
+console.log("[Startup] POSTGRES_URL:", process.env.POSTGRES_URL ? "✓ set" : "✗ not set");
+console.log("[Startup] PGHOST:", process.env.PGHOST ? `✓ ${process.env.PGHOST}` : "✗ not set");
+console.log("[Startup] PGDATABASE:", process.env.PGDATABASE ? `✓ ${process.env.PGDATABASE}` : "✗ not set");
+console.log("[Startup] PGUSER:", process.env.PGUSER ? "✓ set" : "✗ not set");
+console.log("[Startup] PGPASSWORD:", process.env.PGPASSWORD ? "✓ set" : "✗ not set");
 console.log("[Startup] JWT_SECRET:", process.env.JWT_SECRET ? "✓ set" : "✗ not set (using dev default)");
 console.log("[Startup] PLAID_CLIENT_ID:", process.env.PLAID_CLIENT_ID ? "✓ set" : "✗ not set");
 console.log("[Startup] STRIPE_SECRET_KEY:", process.env.STRIPE_SECRET_KEY ? "✓ set" : "✗ not set");
@@ -14,10 +20,29 @@ if (!rawPort) throw new Error("PORT environment variable is required.");
 const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT: "${rawPort}"`);
 
+function resolveDbUrl(): string | undefined {
+  return (
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRESQL_URL ||
+    process.env.DB_URL ||
+    process.env.PGURL ||
+    (() => {
+      const h = process.env.PGHOST || process.env.POSTGRES_HOST;
+      const p = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
+      const u = process.env.PGUSER || process.env.POSTGRES_USER;
+      const pw = process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD;
+      const d = process.env.PGDATABASE || process.env.POSTGRES_DB;
+      if (h && u && pw && d)
+        return `postgresql://${u}:${encodeURIComponent(pw)}@${h}:${p}/${d}`;
+    })()
+  );
+}
+
 async function initStripe() {
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = resolveDbUrl();
   if (!databaseUrl) {
-    console.warn("[Stripe] DATABASE_URL not set — skipping Stripe initialization.");
+    console.warn("[Stripe] No database URL found — skipping Stripe initialization.");
     return;
   }
 
