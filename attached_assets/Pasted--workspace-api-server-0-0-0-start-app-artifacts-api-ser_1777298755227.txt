@@ -1,0 +1,122 @@
+> @workspace/api-server@0.0.0 start /app/artifacts/api-server
+> NODE_ENV=production node dist/index.mjs
+[Plaid] Credentials loaded. Environment: sandbox (https://sandbox.plaid.com)
+[Static] Serving frontend from: /app/artifacts/api-server/dist/public
+[Startup] NODE_ENV: production
+[Startup] PORT: 8080
+[Startup] PLAID_CLIENT_ID: ✓ set
+[Startup] PGHOST: ✗ not set
+[Startup] DATABASE_URL: ✓ set
+[Startup] POSTGRES_URL: ✗ not set
+[Startup] PGDATABASE: ✗ not set
+[Startup] STRIPE_SECRET_KEY: ✓ set
+[Startup] PGUSER: ✗ not set
+[DB] Initializing schema (attempt 1/5)...
+[Startup] PGPASSWORD: ✗ not set
+[Startup] JWT_SECRET: ✓ set
+[AutoPay Cancel API] Server listening on port 8080
+[DB] Init attempt 1 failed: read ECONNRESET
+[DB] Retrying in 2s...
+[DB] Initializing schema (attempt 2/5)...
+[DB] Init attempt 2 failed: read ECONNRESET
+[DB] Retrying in 4s...
+[DB] Initializing schema (attempt 3/5)...
+[DB] Init attempt 3 failed: read ECONNRESET
+[DB] Retrying in 6s...
+[DB] Initializing schema (attempt 4/5)...
+[DB] Running schema initialization...
+[DB] Schema ready.
+[DB] Schema ready.
+[Stripe] Running schema migrations...
+[Stripe] Schema ready.
+{ autoExpandLists: undefined, stripeApiVersion: '2026-02-25.clover' } StripeSync initialized
+error: relation "stripe.accounts" does not exist
+    at file:///app/artifacts/api-server/dist/index.mjs:62:15235
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async g9.getAccountIdByApiKeyHash (file:///app/artifacts/api-server/dist/index.mjs:174:106)
+    at async iS.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:179:1678)
+    at async iS.getCurrentAccount (file:///app/artifacts/api-server/dist/index.mjs:179:2563)
+    at async iS.syncBackfill (file:///app/artifacts/api-server/dist/index.mjs:179:18650) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '16',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1445',
+  routine: 'parserOpenTable'
+} Failed to lookup account by API key hash, falling back to API
+      'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
+      vary: 'Origin',
+no [Error]: Invalid API Key provided: 6wwgnz8n********************o7q4
+      'content-type': 'application/json',
+    at s.toJSON.then.ro.message (file:///app/artifacts/api-server/dist/index.mjs:62:46623)
+      'content-length': '134',
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+      connection: 'keep-alive',
+  type: 'StripeAuthenticationError',
+  raw: {
+      'access-control-allow-credentials': 'true',
+    message: 'Invalid API Key provided: 6wwgnz8n********************o7q4',
+      'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    type: 'invalid_request_error',
+      'access-control-allow-origin': '*',
+    headers: {
+      'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+      server: 'nginx',
+      'access-control-max-age': '300',
+      date: 'Mon, 27 Apr 2026 14:05:10 GMT',
+      'cache-control': 'no-cache, no-store',
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'Request-Id, Stripe-Manage-Version, Stripe-Should-Retry, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required',
+    'access-control-max-age': '300',
+    'cache-control': 'no-cache, no-store',
+    'content-security-policy': "base-uri 'none'; default-src 'none'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
+    statusCode: 401,
+    requestId: undefined
+  },
+  rawType: 'invalid_request_error',
+  code: undefined,
+  doc_url: undefined,
+  param: undefined,
+  detail: undefined,
+  headers: {
+      'www-authenticate': 'Bearer realm="Stripe"',
+    server: 'nginx',
+      'x-robots-tag': 'none',
+    date: 'Mon, 27 Apr 2026 14:05:10 GMT',
+      'x-wc': '383',
+    'content-type': 'application/json',
+      'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+    'content-length': '134',
+    },
+    connection: 'keep-alive',
+} Failed to retrieve account from Stripe API
+    vary: 'Origin',
+    'www-authenticate': 'Bearer realm="Stripe"',
+    'x-robots-tag': 'none',
+[Stripe] Sync error: Failed to retrieve Stripe account. Please ensure API key is valid.
+    'x-wc': '383',
+    'strict-transport-security': 'max-age=63072000; includeSubDomains; preload'
+  },
+  requestId: undefined,
+  statusCode: 401,
+  userMessage: undefined,
+  charge: undefined,
+  decline_code: undefined,
+  payment_intent: undefined,
+  payment_method: undefined,
+  payment_method_type: undefined,
+  setup_intent: undefined,
+  source: undefined
