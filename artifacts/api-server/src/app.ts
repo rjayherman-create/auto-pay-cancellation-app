@@ -98,8 +98,8 @@ if (isProd) {
 
   app.use(express.static(frontendDir, { maxAge: "1d" }));
 
-  // SPA fallback — all non-API routes serve index.html
-  app.get("*", (_req, res) => {
+  // SPA fallback — all non-API routes serve index.html (Express 5 requires named wildcard)
+  app.get(/(.*)/, (_req, res) => {
     res.sendFile(path.join(frontendDir, "index.html"));
   });
 } else {
