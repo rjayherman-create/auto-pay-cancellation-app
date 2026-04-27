@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, recurringPaymentsTable } from "@workspace/db";
+import { getDb, recurringPaymentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
@@ -13,7 +13,7 @@ router.post("/email-template", requireAuth, async (req: AuthenticatedRequest, re
     userEmail: string;
   };
 
-  const [payment] = await db
+  const [payment] = await getDb()
     .select()
     .from(recurringPaymentsTable)
     .where(and(eq(recurringPaymentsTable.id, paymentId), eq(recurringPaymentsTable.userId, userId)))
@@ -62,7 +62,7 @@ router.post("/ach-revocation", requireAuth, async (req: AuthenticatedRequest, re
     accountLastFour: string;
   };
 
-  const [payment] = await db
+  const [payment] = await getDb()
     .select()
     .from(recurringPaymentsTable)
     .where(and(eq(recurringPaymentsTable.id, paymentId), eq(recurringPaymentsTable.userId, userId)))
@@ -131,7 +131,7 @@ router.post("/stop-payment", requireAuth, async (req: AuthenticatedRequest, res)
     accountLastFour: string;
   };
 
-  const [payment] = await db
+  const [payment] = await getDb()
     .select()
     .from(recurringPaymentsTable)
     .where(and(eq(recurringPaymentsTable.id, paymentId), eq(recurringPaymentsTable.userId, userId)))
