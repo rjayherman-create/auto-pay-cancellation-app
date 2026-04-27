@@ -1,11 +1,14 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import path from "path";
+import { fileURLToPath } from "url";
 import router from "./routes/index.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
 
 const app: Express = express();
+const isProd = process.env.NODE_ENV === "production";
 
 // ─── Security: HTTP Headers ───────────────────────────────────────────────────
 app.use(
@@ -81,13 +84,29 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 // ─── Trust proxy (required for rate limiting behind Replit's proxy) ───────────
 app.set("trust proxy", 1);
 
-// ─── Root ────────────────────────────────────────────────────────────────────
-app.get("/", (_req, res) => {
-  res.json({ service: "AutoPay Cancel API", status: "ok", version: "1.0.0" });
-});
-
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// ─── API Routes ──────────────────────────────────────────────────────────────
 app.use("/api", router);
+
+// ─── Serve Frontend (production only) ────────────────────────────────────────
+if (isProd) {
+  // In the bundled dist/index.mjs, import.meta.url points to dist/index.mjs
+  // so "public" resolves to dist/public — where the frontend build lands
+  const distDir = path.dirname(fileURLToPath(import.meta.url));
+  const frontendDir = path.join(distDir, "public");
+
+  console.log("[Static] Serving frontend from:", frontendDir);
+
+  app.use(express.static(frontendDir, { maxAge: "1d" }));
+
+  // SPA fallback — all non-API routes serve index.html
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(frontendDir, "index.html"));
+  });
+} else {
+  app.get("/", (_req, res) => {
+    res.json({ service: "AutoPay Cancel API", status: "ok", env: "development" });
+  });
+}
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use(

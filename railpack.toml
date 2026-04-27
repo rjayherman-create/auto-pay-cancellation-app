@@ -4,5 +4,5 @@
     node = "22"
 
 [deploy]
-  buildCommand = "pnpm --filter @workspace/api-server run build"
+  buildCommand = "pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/autopay-cancel run build"
   startCommand = "pnpm --filter @workspace/api-server run start"

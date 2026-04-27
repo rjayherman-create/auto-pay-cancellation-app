@@ -36,7 +36,8 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    // Output into the API server's dist so Express can serve it as static files
+    outDir: path.resolve(import.meta.dirname, "../api-server/dist/public"),
     emptyOutDir: true,
   },
   server: {
