@@ -1,12 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { ClerkProvider, Show, useClerk, useAuth as useClerkAuth } from "@clerk/react";
+import { ClerkProvider, useClerk, useAuth as useClerkAuth } from "@clerk/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setApiTokenProvider } from "@workspace/api-client-react";
 
+import { useAuth } from "@/lib/auth";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import Onboarding from "@/pages/onboarding";
@@ -71,6 +72,12 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function RootRedirect() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  return <Redirect to={user ? "/dashboard" : "/sign-in"} />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -78,14 +85,7 @@ function Router() {
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route path="/login"><Redirect to="/sign-in" /></Route>
       <Route path="/register"><Redirect to="/sign-up" /></Route>
-      <Route path="/">
-        <Show when="signed-in">
-          <Redirect to="/dashboard" />
-        </Show>
-        <Show when="signed-out">
-          <Redirect to="/sign-in" />
-        </Show>
-      </Route>
+      <Route path="/" component={RootRedirect} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/subscriptions" component={Subscriptions} />
