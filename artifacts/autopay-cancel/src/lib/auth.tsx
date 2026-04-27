@@ -1,5 +1,5 @@
 import { useUser, useClerk } from "@clerk/react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, useLogin, useRegister } from "@workspace/api-client-react";
 
 export function useAuth() {
   const { isSignedIn, isLoaded } = useUser();
@@ -7,10 +7,14 @@ export function useAuth() {
 
   const { data: profile, isLoading: profileLoading } = useGetMe({
     query: {
+      queryKey: ["me"],
       enabled: isSignedIn === true,
       retry: false,
     },
   });
+
+  const { mutateAsync: loginMutate } = useLogin();
+  const { mutateAsync: registerMutate } = useRegister();
 
   const user = isSignedIn && profile
     ? {
@@ -27,5 +31,11 @@ export function useAuth() {
     user,
     isLoading: !isLoaded || (isSignedIn === true && profileLoading),
     logout: async () => { await signOut(); },
+    login: async ({ email, password }: { email: string; password: string }) => {
+      await loginMutate({ data: { email, password } });
+    },
+    register: async ({ name, email, password }: { name: string; email: string; password: string }) => {
+      await registerMutate({ data: { name, email, password } });
+    },
   };
 }
