@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import jwt from "jsonwebtoken";
 
 export interface AuthenticatedRequest extends Request {
   userId?: number;
@@ -15,6 +16,39 @@ export async function requireAuth(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  // ── Bypass JWT — only active when ENABLE_BYPASS_LOGIN=true ──────────────
+  if (process.env.ENABLE_BYPASS_LOGIN === "true") {
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : null;
+
+    if (bearerToken) {
+      try {
+        const secret = process.env.BYPASS_JWT_SECRET || "bypass-dev-secret";
+        const payload = jwt.verify(bearerToken, secret) as jwt.JwtPayload;
+
+        if (payload.bypass === true && payload.sub) {
+          const userId = parseInt(payload.sub, 10);
+          const [user] = await db
+            .select({ id: usersTable.id })
+            .from(usersTable)
+            .where(eq(usersTable.id, userId))
+            .limit(1);
+
+          if (user) {
+            req.userId = user.id;
+            req.clerkUserId = `bypass_${user.id}`;
+            return next();
+          }
+        }
+      } catch (err: any) {
+        // Invalid or expired bypass token — fall through to Clerk
+        console.warn("[Auth] Bypass JWT invalid:", err.message);
+      }
+    }
+  }
+
   // ── Dev bypass — only active when ENABLE_DEV_BYPASS=true ─────────────────
   if (process.env.ENABLE_DEV_BYPASS === "true" && req.cookies?.dev_session === "1") {
     try {
