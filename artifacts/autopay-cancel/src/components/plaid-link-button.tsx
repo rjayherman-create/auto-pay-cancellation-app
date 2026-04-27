@@ -3,19 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { usePlaidLink } from "react-plaid-link";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/react";
 
 const API_BASE = "/api";
 
-function authFetch(path: string, options: RequestInit = {}) {
-  const token = localStorage.getItem("auth_token");
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
-  });
+function useAuthFetch() {
+  const { getToken } = useAuth();
+  return async function authFetch(path: string, options: RequestInit = {}) {
+    const token = await getToken();
+    return fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  };
 }
 
 interface PlaidLinkButtonProps {
@@ -35,6 +39,7 @@ export function PlaidLinkButton({
   className,
   size = "default",
 }: PlaidLinkButtonProps) {
+  const authFetch = useAuthFetch();
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [loadingToken, setLoadingToken] = useState(false);

@@ -17,7 +17,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }
   
   if (!user) {
-    return <Redirect to="/login" />;
+    return <Redirect to="/sign-in" />;
   }
 
   const style = {

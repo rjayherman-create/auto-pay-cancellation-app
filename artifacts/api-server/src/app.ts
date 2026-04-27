@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { clerkMiddleware } from "@clerk/express";
 import router from "./routes/index.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
@@ -29,6 +30,8 @@ const allowedOrigins = [
   /\.replit\.dev$/,
   /\.repl\.co$/,
   /localhost/,
+  /\.railway\.app$/,
+  /\.up\.railway\.app$/,
 ];
 
 app.use(
@@ -48,6 +51,9 @@ app.use(
 
 // ─── Security: Global Rate Limiter ────────────────────────────────────────────
 app.use(globalLimiter);
+
+// ─── Clerk Authentication Middleware ─────────────────────────────────────────
+app.use(clerkMiddleware());
 
 // ─── Security: Stripe Webhook (raw body BEFORE json parser) ──────────────────
 app.post(
