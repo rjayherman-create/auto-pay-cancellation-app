@@ -1,21 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useAuth as useClerkAuth } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { usePlaidLink } from "react-plaid-link";
 import { toast } from "sonner";
 
 const API_BASE = "/api";
-
-function authFetch(path: string, options: RequestInit = {}) {
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-}
 
 interface PlaidLinkButtonProps {
   onSuccess: () => void;
@@ -34,6 +24,21 @@ export function PlaidLinkButton({
   className,
   size = "default",
 }: PlaidLinkButtonProps) {
+  const { getToken } = useClerkAuth();
+
+  const authFetch = useCallback(async (path: string, options: RequestInit = {}) => {
+    const token = await getToken();
+    return fetch(`${API_BASE}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers as Record<string, string> || {}),
+      },
+    });
+  }, [getToken]);
+
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [loadingToken, setLoadingToken] = useState(false);

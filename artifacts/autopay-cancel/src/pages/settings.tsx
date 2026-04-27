@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useAuth as useClerkAuth } from "@clerk/react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -34,17 +35,6 @@ interface Subscription {
 
 const API_BASE = "/api";
 
-function authFetch(path: string, options: RequestInit = {}) {
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-}
-
 const FEATURES = [
   "Detect all recurring subscriptions",
   "Step-by-step cancellation guides",
@@ -56,7 +46,21 @@ const FEATURES = [
 
 export default function Settings() {
   const { user, logout } = useAuth();
+  const { getToken } = useClerkAuth();
   const [location] = useLocation();
+
+  const authFetch = useCallback(async (path: string, options: RequestInit = {}) => {
+    const token = await getToken();
+    return fetch(`${API_BASE}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers as Record<string, string> || {}),
+      },
+    });
+  }, [getToken]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [subStatus, setSubStatus] = useState<string>("none");

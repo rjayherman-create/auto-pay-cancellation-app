@@ -2,6 +2,27 @@ export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
 };
 
+// ─── Global Clerk session token store ─────────────────────────────────────────
+// Store the Clerk getToken function so every request gets a fresh JWT.
+// Clerk session tokens expire in ~1 min; calling getToken() always returns
+// a fresh one (Clerk caches + refreshes internally).
+// Call setApiTokenProvider(getToken) from inside <ClerkProvider> context.
+type TokenProvider = () => Promise<string | null>;
+let _tokenProvider: TokenProvider | null = null;
+
+export function setApiTokenProvider(fn: TokenProvider | null): void {
+  _tokenProvider = fn;
+}
+
+/** @deprecated use setApiTokenProvider instead */
+export function setApiAuthToken(_token: string | null): void {
+  // no-op kept for backwards compat
+}
+
+export function getApiAuthToken(): string | null {
+  return null;
+}
+
 export type ErrorType<T = unknown> = ApiError<T>;
 
 export type BodyType<T> = T;
@@ -298,6 +319,11 @@ export async function customFetch<T = unknown>(
   }
 
   const requestInfo = { method, url: resolveUrl(input) };
+
+  if (_tokenProvider && !headers.has("authorization")) {
+    const token = await _tokenProvider();
+    if (token) headers.set("authorization", `Bearer ${token}`);
+  }
 
   const response = await fetch(input, { ...init, method, headers, credentials: "include" });
 
