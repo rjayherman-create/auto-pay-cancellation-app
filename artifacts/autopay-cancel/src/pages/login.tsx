@@ -51,6 +51,7 @@ export default function Login() {
                     id="email" 
                     type="email" 
                     required 
+                    autoComplete="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="h-12 px-4 bg-slate-50 border-slate-200 focus:bg-white" 
@@ -63,6 +64,7 @@ export default function Login() {
                     id="password" 
                     type="password" 
                     required 
+                    autoComplete="current-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="h-12 px-4 bg-slate-50 border-slate-200 focus:bg-white" 

@@ -68,7 +68,9 @@ export default function Register() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input 
                     id="name" 
+                    type="text"
                     required 
+                    autoComplete="name"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     className="h-12 px-4 bg-slate-50 border-slate-200 focus:bg-white" 
@@ -81,6 +83,7 @@ export default function Register() {
                     id="email" 
                     type="email" 
                     required 
+                    autoComplete="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="h-12 px-4 bg-slate-50 border-slate-200 focus:bg-white" 
@@ -94,6 +97,7 @@ export default function Register() {
                     type="password" 
                     required 
                     minLength={8}
+                    autoComplete="new-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="h-12 px-4 bg-slate-50 border-slate-200 focus:bg-white" 
