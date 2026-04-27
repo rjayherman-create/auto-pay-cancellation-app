@@ -21,22 +21,23 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT: "${rawPort}"`);
 
 function resolveDbUrl(): string | undefined {
-  return (
-    process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL ||
-    process.env.POSTGRESQL_URL ||
-    process.env.DB_URL ||
-    process.env.PGURL ||
-    (() => {
-      const h = process.env.PGHOST || process.env.POSTGRES_HOST;
-      const p = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
-      const u = process.env.PGUSER || process.env.POSTGRES_USER;
-      const pw = process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD;
-      const d = process.env.PGDATABASE || process.env.POSTGRES_DB;
-      if (h && u && pw && d)
-        return `postgresql://${u}:${encodeURIComponent(pw)}@${h}:${p}/${d}`;
-    })()
-  );
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  if (process.env.POSTGRESQL_URL) return process.env.POSTGRESQL_URL;
+  if (process.env.DB_URL) return process.env.DB_URL;
+  if (process.env.PGURL) return process.env.PGURL;
+
+  // Construct from individual PG* vars (Railway Postgres plugin injects these)
+  const h = process.env.PGHOST || process.env.POSTGRES_HOST;
+  const p = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
+  const u = process.env.PGUSER || process.env.POSTGRES_USER;
+  const pw = process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD;
+  const d = process.env.PGDATABASE || process.env.POSTGRES_DB;
+  if (h && u && pw && d) {
+    return `postgresql://${u}:${encodeURIComponent(pw)}@${h}:${p}/${d}`;
+  }
+
+  return undefined;
 }
 
 async function initStripe() {
