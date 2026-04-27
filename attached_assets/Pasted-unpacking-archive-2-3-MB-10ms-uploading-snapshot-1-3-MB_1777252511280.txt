@@ -1,0 +1,70 @@
+unpacking archive
+2.3 MB
+10ms
+uploading snapshot
+1.3 MB
+1ms
+using build driver railpack-v0.23.0
+╭─────────────────╮
+│ Railpack 0.23.0 │
+╰─────────────────╯
+ 
+  ↳ Detected Node
+  ↳ Installing pnpm@10.26.1 with Corepack
+            
+  Packages  
+  ──────────
+  node  │  22.22.2  │  package.json > engines > node (>=22)
+  pnpm  │  10.26.1  │  package.json > packageManager (10.26.1)
+            
+  Steps     
+  ──────────
+  ▸ install
+    $ npm i -g corepack@latest && corepack enable && corepack prepare --activate
+  ▸ build
+    $ pnpm run build
+  Deploy    
+  ──────────
+    $ pnpm --filter @workspace/api-server dev
+ 
+
+load build definition from ./railpack-plan.json
+0ms
+
+install mise packages: node cached
+0ms
+
+copy /root/.local/state/mise cached
+11ms
+
+copy / /app, package.json
+171ms
+
+mkdir -p /app/node_modules/.cache
+193ms
+
+pnpm install --frozen-lockfile --prefer-offline
+3s
+Done in 2.8s using pnpm v10.26.1
+
+pnpm run build
+8s
+> workspace@0.0.0 typecheck /app
+> pnpm run typecheck:libs && pnpm -r --filter "./artifacts/**" --filter "./scripts" --if-present run typecheck
+> workspace@0.0.0 typecheck:libs /app
+> tsc --build
+artifacts/api-server typecheck$ tsc -p tsconfig.json --noEmit
+artifacts/mockup-sandbox typecheck$ tsc -p tsconfig.json --noEmit
+scripts typecheck: Done
+artifacts/api-server typecheck: Done
+artifacts/mockup-sandbox typecheck: Done
+artifacts/autopay-cancel typecheck: Done
+artifacts/autopay-cancel build$ vite build --config vite.config.ts
+artifacts/api-server build:          ╵ ~~~~~
+artifacts/autopay-cancel build: failed to load config from /app/artifacts/autopay-cancel/vite.config.ts
+artifacts/autopay-cancel build: Error: PORT environment variable is required but was not provided.
+artifacts/autopay-cancel build:     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+artifacts/autopay-cancel build:     at async createBuilder (file:///app/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:33875:19)
+/app/artifacts/autopay-cancel:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/autopay-cancel@0.0.0 build: `vite build --config vite.config.ts`
+Exit status 1
