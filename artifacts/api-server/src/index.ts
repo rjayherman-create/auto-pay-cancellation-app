@@ -2,6 +2,7 @@ import app from "./app.js";
 import { initDb, pool } from "@workspace/db";
 import { setBillingState } from "./billingState.js";
 import { setDbState, getDbState } from "./dbState.js";
+import { resolveRailwayWebhookDomain } from "./stripeEnvGuard.js";
 
 // ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -92,26 +93,13 @@ async function initStripe() {
     // production service and a custom name (e.g. "staging", "pr-42") on
     // preview/staging services.
     const railwayEnv = process.env.RAILWAY_ENVIRONMENT;
-    const isRailwayProduction = !railwayEnv || railwayEnv === "production";
 
-    // Choose webhook domain:
-    //   • Production Railway service  → prefer APP_DOMAIN (stable custom
-    //     domain), fall back to RAILWAY_PUBLIC_DOMAIN.
-    //   • Non-production Railway env  → skip webhook registration (domain=undefined)
-    //     to avoid accumulating stale preview endpoints in the Stripe dashboard.
-    //   • No Railway env variable set → same as production (non-Railway host).
-    let domain: string | undefined;
-    if (isRailwayProduction) {
-      domain = process.env.APP_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN || undefined;
-    } else {
-      // Preview / staging environments: skip webhook registration entirely.
-      // Registering a webhook per preview accumulates dozens of dead endpoints
-      // in the Stripe dashboard (one per PR / ephemeral deploy) that will never
-      // receive events once the preview is torn down.  Real webhook delivery is
-      // not required for preview testing, so we leave domain undefined and let
-      // runStripeSyncInit() skip the findOrCreateManagedWebhook() call.
-      domain = undefined;
-    }
+    // Choose webhook domain using the extracted guard (see stripeEnvGuard.ts).
+    // Production → APP_DOMAIN (preferred) or RAILWAY_PUBLIC_DOMAIN.
+    // Preview / staging → RAILWAY_PUBLIC_DOMAIN only (APP_DOMAIN is never used,
+    //   which is the safety property that prevents preview deploys from
+    //   overwriting the production webhook).
+    const domain = resolveRailwayWebhookDomain(process.env);
 
     console.log(
       `[Stripe] Railway environment: ${railwayEnv ?? "(not set — treating as production)"}` +
