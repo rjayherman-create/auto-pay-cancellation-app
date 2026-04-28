@@ -1,7 +1,7 @@
 import app from "./app.js";
-import { initDb } from "@workspace/db";
+import { initDb, pool } from "@workspace/db";
 import { setBillingState } from "./billingState.js";
-import { setDbState } from "./dbState.js";
+import { setDbState, getDbState } from "./dbState.js";
 
 // ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -86,6 +86,38 @@ async function initStripe() {
     // the same way as the Replit path.  runStripeSyncInit() runs DB
     // migrations, calls findOrCreateManagedWebhook(), and dispatches
     // syncBackfill() — it works on any platform with a PostgreSQL DB.
+
+    // Determine Railway environment to avoid preview deploys overwriting the
+    // production webhook.  RAILWAY_ENVIRONMENT is "production" on the
+    // production service and a custom name (e.g. "staging", "pr-42") on
+    // preview/staging services.
+    const railwayEnv = process.env.RAILWAY_ENVIRONMENT;
+    const isRailwayProduction = !railwayEnv || railwayEnv === "production";
+
+    // Choose webhook domain:
+    //   • Production Railway service  → prefer APP_DOMAIN (stable custom
+    //     domain), fall back to RAILWAY_PUBLIC_DOMAIN.
+    //   • Non-production Railway env  → skip webhook registration (domain=undefined)
+    //     to avoid accumulating stale preview endpoints in the Stripe dashboard.
+    //   • No Railway env variable set → same as production (non-Railway host).
+    let domain: string | undefined;
+    if (isRailwayProduction) {
+      domain = process.env.APP_DOMAIN || process.env.RAILWAY_PUBLIC_DOMAIN || undefined;
+    } else {
+      // Preview / staging environments: skip webhook registration entirely.
+      // Registering a webhook per preview accumulates dozens of dead endpoints
+      // in the Stripe dashboard (one per PR / ephemeral deploy) that will never
+      // receive events once the preview is torn down.  Real webhook delivery is
+      // not required for preview testing, so we leave domain undefined and let
+      // runStripeSyncInit() skip the findOrCreateManagedWebhook() call.
+      domain = undefined;
+    }
+
+    console.log(
+      `[Stripe] Railway environment: ${railwayEnv ?? "(not set — treating as production)"}` +
+      ` | webhook domain: ${domain ?? "(none — webhook registration will be skipped)"}`
+    );
+
     const databaseUrl = resolveDbUrl();
     if (!databaseUrl) {
       // No DB available — fall back to a basic connectivity check so we at
@@ -103,15 +135,34 @@ async function initStripe() {
     }
     try {
       const { runStripeSyncInit } = await import("./stripeSyncInit.js");
-      const domain =
-        process.env.APP_DOMAIN ||
-        process.env.RAILWAY_PUBLIC_DOMAIN ||
-        undefined;
       await runStripeSyncInit({ databaseUrl, domain });
     } catch (error: any) {
       console.error("[Stripe] Initialization error:", error.message);
     }
   }
+}
+
+// ─── Periodic DB liveness ping ───────────────────────────────────────────────
+const DB_PING_INTERVAL_MS = 30_000;
+
+function startDbLivenessPing(): NodeJS.Timeout {
+  const interval = setInterval(async () => {
+    try {
+      await pool.query("SELECT 1");
+      const { dbReady } = getDbState();
+      if (!dbReady) {
+        console.log("[DB] Liveness ping recovered — marking DB ready.");
+        setDbState({ dbReady: true });
+      }
+    } catch (err: any) {
+      const { dbReady } = getDbState();
+      if (dbReady) {
+        console.error("[DB] Liveness ping failed — marking DB not ready:", err.message);
+        setDbState({ dbReady: false });
+      }
+    }
+  }, DB_PING_INTERVAL_MS);
+  return interval;
 }
 
 // ─── Start server immediately so Railway health checks pass ──────────────────
@@ -121,6 +172,8 @@ app.listen(port, () => {
 
 // ─── DB init + Stripe run in background (non-fatal) ──────────────────────────
 async function initBackground() {
+  let dbLivenessInterval: NodeJS.Timeout | null = null;
+
   const maxAttempts = 5;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -128,6 +181,8 @@ async function initBackground() {
       await initDb();
       console.log("[DB] Schema ready.");
       setDbState({ dbReady: true });
+      dbLivenessInterval = startDbLivenessPing();
+      console.log("[DB] Liveness ping started (every 30s).");
       break;
     } catch (err: any) {
       console.error(`[DB] Init attempt ${attempt} failed:`, err.message);
@@ -141,6 +196,13 @@ async function initBackground() {
       }
     }
   }
+
+  process.once("SIGTERM", () => {
+    if (dbLivenessInterval !== null) {
+      clearInterval(dbLivenessInterval);
+      console.log("[DB] Liveness ping stopped (SIGTERM).");
+    }
+  });
 
   await initStripe();
 }
