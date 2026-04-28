@@ -1,59 +1,69 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SignIn } from "@clerk/react";
-import { useLocation } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const showBypass = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
+const bypassMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
 
 export default function SignInPage() {
-  const [, setLocation] = useLocation();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(bypassMode);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDevLogin() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/auth/dev-login", {
+      const res = await fetch(`${basePath}/api/auth/dev-login`, {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Dev login failed");
-      setLocation("/dashboard");
+      if (!res.ok) throw new Error("Dev login failed — ensure ENABLE_DEV_BYPASS=true is set on the server");
+      // Full reload: clears React Query cache so /api/auth/me refetches with the new cookie
+      window.location.href = `${basePath}/dashboard`;
     } catch (e: any) {
       setError(e.message);
-    } finally {
       setLoading(false);
     }
   }
 
+  // Auto-login immediately when bypass mode is active
+  useEffect(() => {
+    if (bypassMode) handleDevLogin();
+  }, []);
+
+  // Bypass mode: show a minimal loading screen (auto-login is in progress)
+  if (bypassMode) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 px-4 gap-4">
+        <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-4">
+          <div className="text-xl font-bold text-slate-900">Auto-Pay Cancel</div>
+          {loading && !error && (
+            <p className="text-sm text-slate-500">Signing you in…</p>
+          )}
+          {error && (
+            <>
+              <p className="text-sm text-red-600">{error}</p>
+              <button
+                onClick={handleDevLogin}
+                className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 transition-colors"
+              >
+                Retry
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Normal mode: show Clerk sign-in widget
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 px-4 gap-6">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 px-4">
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
         fallbackRedirectUrl={`${basePath}/dashboard`}
       />
-
-      {showBypass && (
-        <div className="w-full max-w-sm rounded-xl border border-amber-200 bg-amber-50 p-4 text-center shadow-sm">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
-            Dev / Testing bypass
-          </p>
-          <button
-            onClick={handleDevLogin}
-            disabled={loading}
-            className="w-full rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-amber-600 disabled:opacity-50 transition-colors"
-          >
-            {loading ? "Signing in…" : "Continue as Test User (skip Clerk)"}
-          </button>
-          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-          <p className="mt-2 text-xs text-amber-600">
-            Only visible in development — disabled in production
-          </p>
-        </div>
-      )}
     </div>
   );
 }

@@ -63,10 +63,17 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-function RootRedirect() {
+// Clerk-aware redirect — only rendered when ClerkProvider is active
+function RootRedirectClerk() {
   const { isLoaded, isSignedIn } = useUser();
   if (!isLoaded) return null;
   return <Redirect to={isSignedIn ? "/dashboard" : "/sign-in"} />;
+}
+
+// Bypass-mode redirect — no Clerk hooks, just go to sign-in (which auto-logs in)
+function RootRedirect() {
+  if (bypassEnabled) return <Redirect to="/sign-in" />;
+  return <RootRedirectClerk />;
 }
 
 function Router() {
@@ -148,27 +155,19 @@ function ClerkUnavailableFallback() {
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
 
-  const inner = (
-    <>
-      <ClerkTokenSync />
-      <ClerkQueryClientCacheInvalidator />
-      <TooltipProvider>
-        <Router />
-        <Toaster />
-        <SonnerToaster />
-      </TooltipProvider>
-    </>
+  const bare = (
+    <TooltipProvider>
+      <Router />
+      <Toaster />
+      <SonnerToaster />
+    </TooltipProvider>
   );
 
-  if (!clerkPubKey) {
-    return (
-      <TooltipProvider>
-        <Router />
-        <Toaster />
-        <SonnerToaster />
-      </TooltipProvider>
-    );
-  }
+  // Bypass mode: skip Clerk entirely — no network calls to Clerk servers
+  if (bypassEnabled) return bare;
+
+  // No key configured: also skip Clerk
+  if (!clerkPubKey) return bare;
 
   return (
     <ClerkErrorBoundary fallback={<ClerkUnavailableFallback />}>
@@ -182,7 +181,9 @@ function ClerkProviderWithRoutes() {
         routerPush={(to) => setLocation(stripBase(to))}
         routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
       >
-        {inner}
+        <ClerkTokenSync />
+        <ClerkQueryClientCacheInvalidator />
+        {bare}
       </ClerkProvider>
     </ClerkErrorBoundary>
   );

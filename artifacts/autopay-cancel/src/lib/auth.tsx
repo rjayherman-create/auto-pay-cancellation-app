@@ -1,13 +1,23 @@
 import { useUser, useClerk } from "@clerk/react";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 
-export function useAuth() {
+const bypassMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+async function callLogout() {
+  try {
+    await fetch(`${basePath}/api/auth/logout`, { method: "POST", credentials: "include" });
+  } catch {
+    // ignore
+  }
+  window.location.href = `${basePath}/sign-in`;
+}
+
+// ── Clerk path ────────────────────────────────────────────────────────────────
+function useAuthClerk() {
   const { isLoaded, isSignedIn } = useUser();
   const { signOut } = useClerk();
 
-  // Always call /api/auth/me once Clerk finishes loading.
-  // The backend accepts EITHER a Clerk Bearer token OR the dev_session cookie,
-  // so this works for both real Clerk users and the bypass login.
   const { data: profile, isLoading: profileLoading } = useGetMe({
     query: {
       queryKey: getGetMeQueryKey(),
@@ -28,17 +38,8 @@ export function useAuth() {
     : null;
 
   const logout = async () => {
-    // Clear Clerk session if there is one
-    if (isSignedIn) {
-      await signOut();
-    }
-    // Always clear the backend cookie session
-    try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch {
-      // ignore
-    }
-    window.location.href = "/sign-in";
+    if (isSignedIn) await signOut();
+    await callLogout();
   };
 
   return {
@@ -47,3 +48,35 @@ export function useAuth() {
     logout,
   };
 }
+
+// ── Bypass path (no Clerk, uses dev_session cookie) ───────────────────────────
+function useAuthBypass() {
+  const { data: profile, isLoading: profileLoading } = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      enabled: true,
+      retry: false,
+    },
+  });
+
+  const user = profile
+    ? {
+        id: profile.id ?? 0,
+        email: profile.email ?? "",
+        name: profile.name ?? "User",
+        subscriptionStatus: profile.subscriptionStatus ?? "trial",
+        trialEndsAt: profile.trialEndsAt,
+        createdAt: profile.createdAt,
+      }
+    : null;
+
+  return {
+    user,
+    isLoading: profileLoading,
+    logout: callLogout,
+  };
+}
+
+// Statically pick the right hook — bypassMode is a compile-time constant so
+// the same function is always exported, satisfying React's rules of hooks.
+export const useAuth = bypassMode ? useAuthBypass : useAuthClerk;

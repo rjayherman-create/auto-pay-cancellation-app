@@ -111,7 +111,18 @@ app.use(cookieParser());
 app.set("trust proxy", 1);
 
 // ─── Clerk Middleware ─────────────────────────────────────────────────────────
-app.use(clerkMiddleware());
+// Skip Clerk token validation when the dev bypass cookie is active — avoids
+// network hangs when Clerk dev keys are rate-limited.
+const _clerkMw = clerkMiddleware();
+app.use((req, res, next) => {
+  const bypassAllowed =
+    process.env.NODE_ENV === "development" ||
+    process.env.ENABLE_DEV_BYPASS === "true";
+  if (bypassAllowed && (req.cookies as Record<string, string>)?.dev_session === "1") {
+    return next();
+  }
+  return _clerkMw(req, res, next);
+});
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
 app.use("/api", router);
