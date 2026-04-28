@@ -6,4 +6,5 @@ export {
   getApiAuthToken,
   getApiBearerToken,
   ApiError,
+  setStartingUpCallback,
 } from "./custom-fetch";

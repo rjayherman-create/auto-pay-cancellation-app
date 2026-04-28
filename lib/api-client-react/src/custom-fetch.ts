@@ -2,6 +2,16 @@ export type CustomFetchOptions = RequestInit & {
   responseType?: "json" | "text" | "blob" | "auto";
 };
 
+// ─── Global 503 / starting-up callback ────────────────────────────────────────
+// Fired whenever a 503 response is received, with the Retry-After seconds.
+// The UI registers this to show a live countdown banner.
+type StartingUpCallback = (retryAfterSeconds: number) => void;
+let _startingUpCallback: StartingUpCallback | null = null;
+
+export function setStartingUpCallback(fn: StartingUpCallback | null): void {
+  _startingUpCallback = fn;
+}
+
 // ─── Global Clerk session token store ─────────────────────────────────────────
 // Store the Clerk getToken function so every request gets a fresh JWT.
 // Clerk session tokens expire in ~1 min; calling getToken() always returns
@@ -333,6 +343,10 @@ export async function customFetch<T = unknown>(
   const response = await fetch(input, { ...init, method, headers, credentials: "include" });
 
   if (!response.ok) {
+    if (response.status === 503 && _startingUpCallback) {
+      const retryAfter = parseInt(response.headers.get("Retry-After") ?? "10", 10);
+      _startingUpCallback(Number.isFinite(retryAfter) ? retryAfter : 10);
+    }
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
   }

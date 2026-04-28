@@ -1,4 +1,23 @@
 /**
+ * Resolves the webhook domain for Stripe initialization on the Replit platform.
+ *
+ * Rules:
+ *   - APP_DOMAIN is preferred when set.
+ *   - REPLIT_DOMAINS is used as a fallback; when multiple comma-separated
+ *     domains are present only the first entry is used.
+ *   - If neither variable is set, undefined is returned and webhook
+ *     registration is skipped.
+ *
+ * Accepting env as an explicit parameter makes the function purely
+ * deterministic and trivially testable without touching process.env.
+ */
+export function resolveReplitWebhookDomain(env: NodeJS.ProcessEnv): string | undefined {
+  if (env.APP_DOMAIN) return env.APP_DOMAIN;
+  const firstReplitDomain = env.REPLIT_DOMAINS?.split(",")[0]?.trim();
+  return firstReplitDomain || undefined;
+}
+
+/**
  * Resolves the webhook domain that will be passed to runStripeSyncInit() for
  * Stripe initialization, based on the Railway environment guard introduced in
  * task-13.

@@ -3,6 +3,7 @@ import { initDb, pool } from "@workspace/db";
 import { setBillingState } from "./billingState.js";
 import { setDbState, getDbState } from "./dbState.js";
 import { startDbLivenessPing } from "./dbLivenessPing.js";
+import { resolveReplitWebhookDomain } from "./stripeEnvGuard.js";
 
 // ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -77,7 +78,7 @@ async function initStripe() {
     }
     try {
       const { runStripeSyncInit } = await import("./stripeSyncInit.js");
-      const domain = process.env.APP_DOMAIN || process.env.REPLIT_DOMAINS?.split(",")[0];
+      const domain = resolveReplitWebhookDomain(process.env);
       await runStripeSyncInit({ databaseUrl, domain });
     } catch (error: any) {
       console.error("[Stripe] Initialization error:", error.message);
