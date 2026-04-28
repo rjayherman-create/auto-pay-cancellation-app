@@ -368,14 +368,11 @@ components:
           type: string
         billingActive:
           type: boolean
-        dbReady:
-          type: boolean
         keyPrefix:
           type: string
       required:
         - status
         - billingActive
-        - dbReady
 
     ErrorResponse:
       type: object

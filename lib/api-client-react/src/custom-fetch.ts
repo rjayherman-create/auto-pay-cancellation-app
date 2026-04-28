@@ -23,12 +23,6 @@ export function getApiAuthToken(): string | null {
   return null;
 }
 
-/** Get a fresh Bearer token from the current session (Clerk or null). */
-export async function getApiBearerToken(): Promise<string | null> {
-  if (!_tokenProvider) return null;
-  return _tokenProvider();
-}
-
 export type ErrorType<T = unknown> = ApiError<T>;
 
 export type BodyType<T> = T;

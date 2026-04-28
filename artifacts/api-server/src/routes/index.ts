@@ -9,15 +9,14 @@ import stripeRouter from "./stripe.js";
 import plaidRouter from "./plaid.js";
 import adminRouter from "./admin.js";
 import { authLimiter } from "../middlewares/rateLimiter.js";
-import { requireDbReady } from "../middlewares/dbReadyCheck.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/auth", authLimiter, authRouter);
-router.use("/accounts", requireDbReady, accountsRouter);
-router.use("/payments", requireDbReady, paymentsRouter);
-router.use("/documents", requireDbReady, documentsRouter);
+router.use("/accounts", accountsRouter);
+router.use("/payments", paymentsRouter);
+router.use("/documents", documentsRouter);
 router.use("/dashboard", dashboardRouter);
 router.use("/stripe", stripeRouter);
 router.use("/plaid", plaidRouter);

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout";
-import { useGetRecurringPayments, GetRecurringPaymentsStatus, getApiBearerToken } from "@workspace/api-client-react";
+import { useGetRecurringPayments, GetRecurringPaymentsStatus } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,6 @@ import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import AutopaySavingsDashboard from "@/components/AutopaySavingsDashboard";
-import CancellationWorkflowPanel from "@/components/CancellationWorkflowPanel";
 import type { AutopayItem } from "@/lib/autopayTools";
 
 const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -28,13 +27,9 @@ export default function Subscriptions() {
     setSeeding(true);
     setSeedMsg('');
     try {
-      const token = await getApiBearerToken();
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch(`${API_BASE}/api/admin/seed-demo`, {
         method: "POST",
         credentials: "include",
-        headers,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to seed demo data");
@@ -194,26 +189,6 @@ export default function Subscriptions() {
               </CardContent>
             </Card>
           ))}
-        </div>
-      )}
-
-      {/* ── Cancellation Workflow Panel ───────────────────────────────── */}
-      {!isLoading && (
-        <div className="mt-10">
-          <CancellationWorkflowPanel
-            items={(payments || []).map((p) => ({
-              id: String(p.id),
-              merchantName: p.merchantName,
-              amount: Number(p.amount || 0),
-              frequency: p.frequency || "monthly",
-              nextChargeDate: (p as any).nextChargeDate || "",
-              customerName: user?.name || "",
-              customerEmail: user?.email || "",
-              accountLastFour: (p as any).accountLastFour || (p as any).last4 || "",
-            }))}
-            customerName={user?.name}
-            customerEmail={user?.email}
-          />
         </div>
       )}
     </Layout>

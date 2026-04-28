@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { SignIn } from "@clerk/react";
+import { useLocation } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const showBypass = true; // server enforces ENABLE_DEV_BYPASS on its end
+const showBypass = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
 
 export default function SignInPage() {
+  const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,17 +14,15 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${basePath}/api/auth/dev-login`, {
+      const res = await fetch("/api/auth/dev-login", {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || `Server returned ${res.status} — set ENABLE_DEV_BYPASS=true in Railway Variables`);
-      }
-      window.location.href = `${basePath}/dashboard`;
+      if (!res.ok) throw new Error("Dev login failed");
+      setLocation("/dashboard");
     } catch (e: any) {
       setError(e.message);
+    } finally {
       setLoading(false);
     }
   }
