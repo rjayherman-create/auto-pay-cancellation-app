@@ -9,6 +9,10 @@ export interface HealthStatus {
   status: string;
   billingActive: boolean;
   keyPrefix?: string;
+  /** ISO timestamp of the last successful DB liveness ping, or null if no ping has succeeded yet. */
+  lastDbPingAt?: string | null;
+  /** ISO timestamp of when the DB first became unavailable, or null if the DB is up. */
+  dbDownSince?: string | null;
 }
 
 export interface ErrorResponse {

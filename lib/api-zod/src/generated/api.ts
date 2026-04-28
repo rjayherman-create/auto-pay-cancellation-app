@@ -15,6 +15,18 @@ export const HealthCheckResponse = zod.object({
   status: zod.string(),
   billingActive: zod.boolean(),
   keyPrefix: zod.string().optional(),
+  lastDbPingAt: zod
+    .string()
+    .nullish()
+    .describe(
+      "ISO timestamp of the last successful DB liveness ping, or null if no ping has succeeded yet.",
+    ),
+  dbDownSince: zod
+    .string()
+    .nullish()
+    .describe(
+      "ISO timestamp of when the DB first became unavailable, or null if the DB is up.",
+    ),
 });
 
 /**

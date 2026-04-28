@@ -1,6 +1,8 @@
 import app from "./app.js";
-import { initDb } from "@workspace/db";
+import { initDb, pool } from "@workspace/db";
 import { setBillingState } from "./billingState.js";
+import { setDbState, getDbState } from "./dbState.js";
+import { startDbLivenessPing } from "./dbLivenessPing.js";
 
 // ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -94,6 +96,9 @@ async function initStripe() {
   }
 }
 
+// ─── Periodic DB liveness ping ───────────────────────────────────────────────
+const DB_PING_INTERVAL_MS = 30_000;
+
 // ─── Start server immediately so Railway health checks pass ──────────────────
 app.listen(port, () => {
   console.log(`[AutoPay Cancel API] Server listening on port ${port}`);
@@ -101,12 +106,22 @@ app.listen(port, () => {
 
 // ─── DB init + Stripe run in background (non-fatal) ──────────────────────────
 async function initBackground() {
+  let dbLivenessInterval: NodeJS.Timeout | null = null;
+
   const maxAttempts = 5;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       console.log(`[DB] Initializing schema (attempt ${attempt}/${maxAttempts})...`);
       await initDb();
       console.log("[DB] Schema ready.");
+      setDbState({ dbReady: true });
+      dbLivenessInterval = startDbLivenessPing({
+        queryPool: () => pool.query("SELECT 1").then(() => undefined),
+        getDbState,
+        setDbState,
+        intervalMs: DB_PING_INTERVAL_MS,
+      });
+      console.log("[DB] Liveness ping started (every 30s).");
       break;
     } catch (err: any) {
       console.error(`[DB] Init attempt ${attempt} failed:`, err.message);
@@ -116,9 +131,17 @@ async function initBackground() {
         await new Promise((r) => setTimeout(r, delay));
       } else {
         console.error("[DB] All init attempts failed — server will respond with DB errors until connection recovers.");
+        setDbState({ dbReady: false });
       }
     }
   }
+
+  process.once("SIGTERM", () => {
+    if (dbLivenessInterval !== null) {
+      clearInterval(dbLivenessInterval);
+      console.log("[DB] Liveness ping stopped (SIGTERM).");
+    }
+  });
 
   await initStripe();
 }
