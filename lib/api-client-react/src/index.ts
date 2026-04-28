@@ -5,4 +5,5 @@ export {
   setApiAuthToken,
   getApiAuthToken,
   getApiBearerToken,
+  ApiError,
 } from "./custom-fetch";

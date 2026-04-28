@@ -1,0 +1,1110 @@
+Upgrade my existing autopay cancellation app with these workflow features.
+
+IMPORTANT RULES:
+- Do NOT rebuild the app.
+- Do NOT remove existing Plaid code.
+- Do NOT remove the existing cancellation letter generator.
+- Do NOT break the current dashboard.
+- Add these features around the existing recurring payment / subscription list.
+- Use localStorage first so this works immediately without a database migration.
+- Keep all wording legally safe.
+- Avoid claims like “guaranteed cancellation,” “we stop charges,” or “we force refunds.”
+
+==================================================
+FEATURES TO ADD
+==================================================
+
+Add these features:
+
+1. Cancellation Status Tracker
+
+Each autopay/subscription should have a dropdown status:
+
+- Not Started
+- Letter Created
+- Sent
+- Waiting
+- Canceled
+- Still Charging
+
+The status should persist after refresh using localStorage.
+
+2. Renewal / Charge Alerts
+
+Each item should show simple alert text:
+
+- If next charge date is known:
+  “This subscription charges again in X days.”
+
+- If status is “Sent” or “Waiting” and date sent exists:
+  “Follow up if still charging after 10 days.”
+
+- If status is “Still Charging”:
+  “Consider sending a continued charge dispute letter.”
+
+3. Cancellation Proof Vault
+
+For each company, store:
+
+- Generated letter
+- Date sent
+- Company name
+- Email / mailing address
+- Confirmation number
+- Notes
+- Proof upload filenames
+
+Use localStorage first.
+For screenshots/proof uploads, allow the user to select files and save file names only for now.
+Do not upload files to server yet.
+
+4. Extra Letters
+
+Add these letter types:
+
+- Cancel Subscription
+- Refund Request
+- Dispute Continued Charges
+
+The dispute letter should say the user already canceled but the company continued charging and asks for refund/review.
+
+The refund request letter should say the user did not intend to renew and asks for cancellation and refund of the recent charge.
+
+5. Company Cancellation Directory
+
+Add a small directory section for common merchants.
+
+For each merchant, show:
+
+- Best cancellation method
+- Phone
+- Email
+- Mailing address
+- Website cancellation link
+- Notes
+
+Use a starter local directory in code. It can be expanded later.
+
+6. Score Each Autopay
+
+Each item should display one simple score label:
+
+- Easy to cancel
+- May require phone call
+- May require written notice
+- Likely contract / membership issue
+- Watch for continued billing
+
+Use simple keyword rules:
+- Netflix, Spotify, Hulu, Disney, Apple, Google, YouTube, Amazon = Easy to cancel
+- Gym, Fitness, Planet Fitness, Blink, LA Fitness, YMCA = May require phone call
+- Insurance, Warranty, Loan, Lease = Likely contract / membership issue
+- Storage, Membership, Club = May require written notice
+- If status is Still Charging = Watch for continued billing
+
+7. Legal-Safe Consumer Protection Page / Section
+
+Add a section titled:
+
+“Consumer Protection Notes”
+
+Use this wording:
+
+“This app helps you identify recurring payments, generate cancellation requests, track follow-up steps, and organize proof. It does not guarantee that a company will cancel a service, issue a refund, or stop billing immediately.”
+
+Also add:
+
+“Subscription cancellation and negative-option billing rules may vary by company, contract, payment method, and state. Keep copies of your cancellation request, confirmation numbers, and follow-up messages.”
+
+==================================================
+FILES TO CREATE
+==================================================
+
+Find the existing frontend src folder.
+
+It may be one of these:
+- src
+- client/src
+- app/src
+- artifacts/*/src
+
+Create these files in the correct frontend src folder:
+
+1. src/lib/cancellationWorkflow.ts
+2. src/components/CancellationWorkflowPanel.tsx
+
+If the project uses aliases like "@/components", adjust imports as needed.
+
+==================================================
+FILE 1: src/lib/cancellationWorkflow.ts
+==================================================
+
+Create this file:
+
+export type CancellationStatus =
+  | "Not Started"
+  | "Letter Created"
+  | "Sent"
+  | "Waiting"
+  | "Canceled"
+  | "Still Charging";
+
+export type LetterType =
+  | "Cancel Subscription"
+  | "Refund Request"
+  | "Dispute Continued Charges";
+
+export type AutopayScore =
+  | "Easy to cancel"
+  | "May require phone call"
+  | "May require written notice"
+  | "Likely contract / membership issue"
+  | "Watch for continued billing";
+
+export type AutopayWorkflowItem = {
+  id?: string;
+  merchantName: string;
+  amount?: number;
+  frequency?: string;
+  nextChargeDate?: string;
+  customerName?: string;
+  customerEmail?: string;
+  accountLastFour?: string;
+};
+
+export type ProofVaultData = {
+  generatedLetter?: string;
+  dateSent?: string;
+  companyName?: string;
+  companyContact?: string;
+  confirmationNumber?: string;
+  notes?: string;
+  proofFileNames?: string[];
+};
+
+export type CompanyDirectoryEntry = {
+  merchantName: string;
+  bestMethod: string;
+  phone?: string;
+  email?: string;
+  mailingAddress?: string;
+  website?: string;
+  notes?: string;
+};
+
+export const STATUS_OPTIONS: CancellationStatus[] = [
+  "Not Started",
+  "Letter Created",
+  "Sent",
+  "Waiting",
+  "Canceled",
+  "Still Charging",
+];
+
+export const LETTER_TYPES: LetterType[] = [
+  "Cancel Subscription",
+  "Refund Request",
+  "Dispute Continued Charges",
+];
+
+export const COMPANY_DIRECTORY: CompanyDirectoryEntry[] = [
+  {
+    merchantName: "Netflix",
+    bestMethod: "Cancel online inside account settings",
+    website: "https://www.netflix.com/cancelplan",
+    notes: "Usually handled online. Keep confirmation email or screenshot.",
+  },
+  {
+    merchantName: "Spotify",
+    bestMethod: "Cancel online inside account settings",
+    website: "https://www.spotify.com/account/subscription/",
+    notes: "Premium usually remains active until the end of billing period.",
+  },
+  {
+    merchantName: "Hulu",
+    bestMethod: "Cancel online inside account settings",
+    website: "https://secure.hulu.com/account",
+    notes: "Check whether billing is through Hulu, Disney, Roku, Apple, or Amazon.",
+  },
+  {
+    merchantName: "Disney",
+    bestMethod: "Cancel online inside account settings",
+    website: "https://www.disneyplus.com/account",
+    notes: "Check bundle billing if Hulu or ESPN is included.",
+  },
+  {
+    merchantName: "Amazon Prime",
+    bestMethod: "Cancel online through Amazon membership settings",
+    website: "https://www.amazon.com/prime",
+    notes: "Save cancellation confirmation.",
+  },
+  {
+    merchantName: "Apple",
+    bestMethod: "Cancel through Apple Subscriptions",
+    website: "https://support.apple.com/billing",
+    notes: "Many app subscriptions must be canceled through Apple ID settings.",
+  },
+  {
+    merchantName: "Google",
+    bestMethod: "Cancel through Google Play subscriptions",
+    website: "https://play.google.com/store/account/subscriptions",
+    notes: "Many Android app subscriptions must be canceled through Google Play.",
+  },
+  {
+    merchantName: "Planet Fitness",
+    bestMethod: "May require club contact, written notice, or in-person cancellation",
+    phone: "Check local club phone number",
+    mailingAddress: "Check local club address",
+    notes: "Gym memberships may have contract terms. Keep written proof.",
+  },
+  {
+    merchantName: "LA Fitness",
+    bestMethod: "May require online form, mail, or club contact",
+    website: "https://www.lafitness.com",
+    notes: "Gym cancellation rules may vary by location and membership type.",
+  },
+];
+
+function safeKey(value: string): string {
+  return String(value || "unknown")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+export function money(value?: number): string {
+  const safe = Number.isFinite(Number(value)) ? Number(value) : 0;
+  return safe.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+}
+
+export function storageKey(type: "status" | "proof", merchantName: string): string {
+  return `autopay_${type}_${safeKey(merchantName)}`;
+}
+
+export function loadStatus(merchantName: string): CancellationStatus {
+  if (typeof window === "undefined") return "Not Started";
+
+  const saved = window.localStorage.getItem(storageKey("status", merchantName));
+
+  return STATUS_OPTIONS.includes(saved as CancellationStatus)
+    ? (saved as CancellationStatus)
+    : "Not Started";
+}
+
+export function saveStatus(
+  merchantName: string,
+  status: CancellationStatus
+): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(storageKey("status", merchantName), status);
+}
+
+export function loadProof(merchantName: string): ProofVaultData {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const saved = window.localStorage.getItem(storageKey("proof", merchantName));
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveProof(
+  merchantName: string,
+  data: ProofVaultData
+): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(storageKey("proof", merchantName), JSON.stringify(data));
+}
+
+export function daysUntil(dateString?: string): number | null {
+  if (!dateString) return null;
+
+  const today = new Date();
+  const target = new Date(dateString);
+
+  if (Number.isNaN(target.getTime())) return null;
+
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+
+  const difference = target.getTime() - today.getTime();
+  return Math.ceil(difference / (1000 * 60 * 60 * 24));
+}
+
+export function daysSince(dateString?: string): number | null {
+  if (!dateString) return null;
+
+  const today = new Date();
+  const past = new Date(dateString);
+
+  if (Number.isNaN(past.getTime())) return null;
+
+  today.setHours(0, 0, 0, 0);
+  past.setHours(0, 0, 0, 0);
+
+  const difference = today.getTime() - past.getTime();
+  return Math.floor(difference / (1000 * 60 * 60 * 24));
+}
+
+export function getAutopayScore(
+  merchantName: string,
+  status?: CancellationStatus
+): AutopayScore {
+  const name = merchantName.toLowerCase();
+
+  if (status === "Still Charging") return "Watch for continued billing";
+
+  if (
+    name.includes("netflix") ||
+    name.includes("spotify") ||
+    name.includes("hulu") ||
+    name.includes("disney") ||
+    name.includes("apple") ||
+    name.includes("google") ||
+    name.includes("youtube") ||
+    name.includes("amazon")
+  ) {
+    return "Easy to cancel";
+  }
+
+  if (
+    name.includes("gym") ||
+    name.includes("fitness") ||
+    name.includes("planet fitness") ||
+    name.includes("blink") ||
+    name.includes("la fitness") ||
+    name.includes("ymca")
+  ) {
+    return "May require phone call";
+  }
+
+  if (
+    name.includes("storage") ||
+    name.includes("membership") ||
+    name.includes("club")
+  ) {
+    return "May require written notice";
+  }
+
+  if (
+    name.includes("insurance") ||
+    name.includes("warranty") ||
+    name.includes("loan") ||
+    name.includes("lease")
+  ) {
+    return "Likely contract / membership issue";
+  }
+
+  return "May require phone call";
+}
+
+export function findDirectoryEntry(
+  merchantName: string
+): CompanyDirectoryEntry | undefined {
+  const name = merchantName.toLowerCase();
+
+  return COMPANY_DIRECTORY.find((entry) => {
+    const entryName = entry.merchantName.toLowerCase();
+    return name.includes(entryName) || entryName.includes(name);
+  });
+}
+
+export function getAlertText(item: AutopayWorkflowItem): string[] {
+  const alerts: string[] = [];
+  const status = loadStatus(item.merchantName);
+  const proof = loadProof(item.merchantName);
+
+  const chargeDays = daysUntil(item.nextChargeDate);
+
+  if (chargeDays !== null) {
+    if (chargeDays >= 0) {
+      alerts.push(`This subscription charges again in ${chargeDays} day${chargeDays === 1 ? "" : "s"}.`);
+    } else {
+      alerts.push(`This subscription appears to have charged ${Math.abs(chargeDays)} day${Math.abs(chargeDays) === 1 ? "" : "s"} ago.`);
+    }
+  }
+
+  const sentDays = daysSince(proof.dateSent);
+
+  if ((status === "Sent" || status === "Waiting") && sentDays !== null) {
+    const remaining = 10 - sentDays;
+
+    if (remaining > 0) {
+      alerts.push(`Follow up if still charging after ${remaining} more day${remaining === 1 ? "" : "s"}.`);
+    } else {
+      alerts.push("Follow up now if the company is still charging you.");
+    }
+  }
+
+  if (status === "Still Charging") {
+    alerts.push("Consider sending a continued charge dispute letter.");
+  }
+
+  return alerts;
+}
+
+export function generateWorkflowLetter(params: {
+  letterType: LetterType;
+  merchantName: string;
+  customerName?: string;
+  customerEmail?: string;
+  accountLastFour?: string;
+  amount?: number;
+  dateSent?: string;
+}): string {
+  const today = new Date().toLocaleDateString();
+
+  const name = params.customerName || "[Your Name]";
+  const email = params.customerEmail || "[Your Email]";
+  const account = params.accountLastFour || "[Last 4 digits or account identifier]";
+  const company = params.merchantName || "[Company Name]";
+  const amount = params.amount ? money(params.amount) : "[Recent Charge Amount]";
+  const sentDate = params.dateSent || "[Original Cancellation Date]";
+
+  if (params.letterType === "Refund Request") {
+    return `${today}
+
+To: ${company}
+
+Subject: Cancellation and Refund Request
+
+Hello,
+
+I am requesting cancellation of my account, membership, subscription, or recurring payment with ${company}.
+
+Customer Name: ${name}
+Customer Email: ${email}
+Account / Card Identifier: ${account}
+
+I am also requesting a refund of the recent charge in the amount of ${amount}. I did not intend to renew or continue this service, and I would like the account canceled to prevent any future recurring charges.
+
+Please confirm in writing that:
+
+1. My account or recurring payment has been canceled.
+2. No future charges will be made.
+3. My refund request has been reviewed.
+
+Thank you,
+
+${name}`;
+  }
+
+  if (params.letterType === "Dispute Continued Charges") {
+    return `${today}
+
+To: ${company}
+
+Subject: Continued Charge After Cancellation
+
+Hello,
+
+I previously requested cancellation of my account, membership, subscription, or recurring payment with ${company}.
+
+Customer Name: ${name}
+Customer Email: ${email}
+Account / Card Identifier: ${account}
+Original Cancellation Date: ${sentDate}
+Continued Charge Amount: ${amount}
+
+Despite my cancellation request, I noticed that I was charged again. I am requesting that you review this account, stop any future recurring charges, and refund any charges made after my cancellation request.
+
+Please confirm in writing that:
+
+1. The recurring payment has been canceled.
+2. No future charges will be made.
+3. The continued charge has been reviewed for refund.
+
+Thank you,
+
+${name}`;
+  }
+
+  return `${today}
+
+To: ${company}
+
+Subject: Cancellation Request
+
+Hello,
+
+I am requesting cancellation of my account, membership, subscription, or recurring payment with ${company}.
+
+Customer Name: ${name}
+Customer Email: ${email}
+Account / Card Identifier: ${account}
+
+Please cancel this service and stop all future recurring charges.
+
+Please confirm in writing that:
+
+1. My account or recurring payment has been canceled.
+2. No future charges will be made.
+3. The cancellation effective date has been recorded.
+
+Thank you,
+
+${name}`;
+}
+
+==================================================
+FILE 2: src/components/CancellationWorkflowPanel.tsx
+==================================================
+
+Create this file:
+
+import React, { useMemo, useState } from "react";
+import {
+  AutopayWorkflowItem,
+  CancellationStatus,
+  LetterType,
+  LETTER_TYPES,
+  STATUS_OPTIONS,
+  findDirectoryEntry,
+  generateWorkflowLetter,
+  getAlertText,
+  getAutopayScore,
+  loadProof,
+  loadStatus,
+  money,
+  saveProof,
+  saveStatus,
+} from "../lib/cancellationWorkflow";
+
+type Props = {
+  items: AutopayWorkflowItem[];
+  customerName?: string;
+  customerEmail?: string;
+};
+
+export default function CancellationWorkflowPanel({
+  items,
+  customerName,
+  customerEmail,
+}: Props) {
+  const safeItems = Array.isArray(items) ? items : [];
+
+  const [selectedMerchant, setSelectedMerchant] = useState(
+    safeItems[0]?.merchantName || ""
+  );
+
+  const [letterType, setLetterType] = useState<LetterType>("Cancel Subscription");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const selectedItem = useMemo(() => {
+    return (
+      safeItems.find((item) => item.merchantName === selectedMerchant) ||
+      safeItems[0]
+    );
+  }, [safeItems, selectedMerchant, refreshKey]);
+
+  const generatedLetter = selectedItem
+    ? generateWorkflowLetter({
+        letterType,
+        merchantName: selectedItem.merchantName,
+        customerName: selectedItem.customerName || customerName,
+        customerEmail: selectedItem.customerEmail || customerEmail,
+        accountLastFour: selectedItem.accountLastFour,
+        amount: selectedItem.amount,
+        dateSent: loadProof(selectedItem.merchantName).dateSent,
+      })
+    : "";
+
+  function forceRefresh() {
+    setRefreshKey((value) => value + 1);
+  }
+
+  function handleStatusChange(
+    merchantName: string,
+    status: CancellationStatus
+  ) {
+    saveStatus(merchantName, status);
+    forceRefresh();
+  }
+
+  function handleProofChange(
+    merchantName: string,
+    field:
+      | "generatedLetter"
+      | "dateSent"
+      | "companyName"
+      | "companyContact"
+      | "confirmationNumber"
+      | "notes",
+    value: string
+  ) {
+    const proof = loadProof(merchantName);
+
+    saveProof(merchantName, {
+      ...proof,
+      companyName: merchantName,
+      [field]: value,
+    });
+
+    forceRefresh();
+  }
+
+  function handleProofFiles(merchantName: string, files: FileList | null) {
+    const proof = loadProof(merchantName);
+
+    const fileNames = files
+      ? Array.from(files).map((file) => file.name)
+      : [];
+
+    saveProof(merchantName, {
+      ...proof,
+      companyName: merchantName,
+      proofFileNames: fileNames,
+    });
+
+    forceRefresh();
+  }
+
+  async function copyLetter() {
+    if (!selectedItem || !generatedLetter) return;
+
+    await navigator.clipboard.writeText(generatedLetter);
+
+    const proof = loadProof(selectedItem.merchantName);
+
+    saveProof(selectedItem.merchantName, {
+      ...proof,
+      companyName: selectedItem.merchantName,
+      generatedLetter,
+    });
+
+    saveStatus(selectedItem.merchantName, "Letter Created");
+
+    forceRefresh();
+  }
+
+  if (safeItems.length === 0) {
+    return (
+      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <h2 className="text-2xl font-bold">Cancellation Workflow</h2>
+        <p className="mt-2 text-gray-600">
+          Once recurring payments are loaded, this section will help track
+          cancellation status, follow-ups, proof, and refund/dispute letters.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-2xl border bg-white p-6 shadow-sm">
+        <h2 className="text-2xl font-bold">Cancellation Workflow</h2>
+        <p className="mt-2 text-gray-600">
+          Track cancellation status, set follow-up reminders, organize proof,
+          and generate refund or continued-charge dispute letters.
+        </p>
+
+        <div className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+          This app helps you identify recurring payments, generate cancellation
+          requests, track follow-up steps, and organize proof. It does not
+          guarantee that a company will cancel a service, issue a refund, or
+          stop billing immediately.
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4">
+          {safeItems.map((item) => {
+            const status = loadStatus(item.merchantName);
+            const proof = loadProof(item.merchantName);
+            const alerts = getAlertText(item);
+            const score = getAutopayScore(item.merchantName, status);
+            const directory = findDirectoryEntry(item.merchantName);
+
+            return (
+              <div
+                key={`${item.merchantName}-${refreshKey}`}
+                className="rounded-2xl border bg-white p-5 shadow-sm"
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold">{item.merchantName}</h3>
+                    <p className="text-sm text-gray-600">
+                      {money(item.amount)}
+                      {item.frequency ? ` / ${item.frequency}` : ""}
+                    </p>
+
+                    {item.nextChargeDate ? (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Next charge: {item.nextChargeDate}
+                      </p>
+                    ) : null}
+
+                    <div className="mt-2 inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                      {score}
+                    </div>
+                  </div>
+
+                  <div className="w-full md:w-52">
+                    <label className="block text-xs font-semibold text-gray-600">
+                      Status
+                    </label>
+                    <select
+                      className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                      value={status}
+                      onChange={(event) =>
+                        handleStatusChange(
+                          item.merchantName,
+                          event.target.value as CancellationStatus
+                        )
+                      }
+                    >
+                      {STATUS_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {alerts.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    {alerts.map((alert) => (
+                      <div
+                        key={alert}
+                        className="rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-900"
+                      >
+                        {alert}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {directory ? (
+                  <div className="mt-4 rounded-xl border bg-gray-50 p-4">
+                    <h4 className="font-semibold">Company Cancellation Directory</h4>
+                    <div className="mt-2 space-y-1 text-sm text-gray-700">
+                      <p>
+                        <strong>Best method:</strong> {directory.bestMethod}
+                      </p>
+                      {directory.phone ? (
+                        <p>
+                          <strong>Phone:</strong> {directory.phone}
+                        </p>
+                      ) : null}
+                      {directory.email ? (
+                        <p>
+                          <strong>Email:</strong> {directory.email}
+                        </p>
+                      ) : null}
+                      {directory.mailingAddress ? (
+                        <p>
+                          <strong>Mailing address:</strong>{" "}
+                          {directory.mailingAddress}
+                        </p>
+                      ) : null}
+                      {directory.website ? (
+                        <p>
+                          <strong>Website:</strong>{" "}
+                          <a
+                            className="underline"
+                            href={directory.website}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open cancellation link
+                          </a>
+                        </p>
+                      ) : null}
+                      {directory.notes ? (
+                        <p>
+                          <strong>Notes:</strong> {directory.notes}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-xl border bg-gray-50 p-4 text-sm text-gray-700">
+                    <strong>Company Cancellation Directory:</strong> No saved
+                    directory entry yet. Use the proof vault below to store the
+                    best phone, email, mailing address, or cancellation link.
+                  </div>
+                )}
+
+                <div className="mt-4 rounded-xl border p-4">
+                  <h4 className="font-semibold">Cancellation Proof Vault</h4>
+
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <input
+                      className="rounded-lg border px-3 py-2 text-sm"
+                      type="date"
+                      defaultValue={proof.dateSent || ""}
+                      onBlur={(event) =>
+                        handleProofChange(
+                          item.merchantName,
+                          "dateSent",
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <input
+                      className="rounded-lg border px-3 py-2 text-sm"
+                      placeholder="Confirmation number"
+                      defaultValue={proof.confirmationNumber || ""}
+                      onBlur={(event) =>
+                        handleProofChange(
+                          item.merchantName,
+                          "confirmationNumber",
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <input
+                      className="rounded-lg border px-3 py-2 text-sm md:col-span-2"
+                      placeholder="Email, mailing address, phone, or cancellation link"
+                      defaultValue={proof.companyContact || ""}
+                      onBlur={(event) =>
+                        handleProofChange(
+                          item.merchantName,
+                          "companyContact",
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <textarea
+                      className="min-h-[80px] rounded-lg border px-3 py-2 text-sm md:col-span-2"
+                      placeholder="Notes, proof, screenshots taken, who you spoke with, follow-up details..."
+                      defaultValue={proof.notes || ""}
+                      onBlur={(event) =>
+                        handleProofChange(
+                          item.merchantName,
+                          "notes",
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Screenshot / proof filenames
+                      </label>
+                      <input
+                        className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                        type="file"
+                        multiple
+                        onChange={(event) =>
+                          handleProofFiles(item.merchantName, event.target.files)
+                        }
+                      />
+
+                      {proof.proofFileNames?.length ? (
+                        <ul className="mt-2 list-disc pl-5 text-sm text-gray-600">
+                          {proof.proofFileNames.map((fileName) => (
+                            <li key={fileName}>{fileName}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  className="mt-4 rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white"
+                  onClick={() => setSelectedMerchant(item.merchantName)}
+                >
+                  Generate Letter
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-2xl border bg-white p-6 shadow-sm lg:sticky lg:top-6 lg:self-start">
+          <h3 className="text-xl font-bold">Letter Generator</h3>
+
+          <div className="mt-4 grid gap-3">
+            <label className="text-sm">
+              <span className="mb-1 block font-semibold">Company</span>
+              <select
+                className="w-full rounded-lg border px-3 py-2"
+                value={selectedMerchant}
+                onChange={(event) => setSelectedMerchant(event.target.value)}
+              >
+                {safeItems.map((item) => (
+                  <option key={item.merchantName} value={item.merchantName}>
+                    {item.merchantName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-sm">
+              <span className="mb-1 block font-semibold">Letter Type</span>
+              <select
+                className="w-full rounded-lg border px-3 py-2"
+                value={letterType}
+                onChange={(event) =>
+                  setLetterType(event.target.value as LetterType)
+                }
+              >
+                {LETTER_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <textarea
+            className="mt-4 min-h-[420px] w-full rounded-xl border p-4 font-mono text-sm"
+            value={generatedLetter}
+            readOnly
+          />
+
+          <button
+            className="mt-4 w-full rounded-lg bg-black px-4 py-2 font-semibold text-white"
+            onClick={copyLetter}
+          >
+            Copy Letter + Save to Proof Vault
+          </button>
+
+          <div className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-700">
+            <strong>Consumer Protection Notes:</strong>
+            <p className="mt-2">
+              Subscription cancellation and negative-option billing rules may
+              vary by company, contract, payment method, and state. Keep copies
+              of your cancellation request, confirmation numbers, and follow-up
+              messages.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+==================================================
+CONNECT TO EXISTING DASHBOARD
+==================================================
+
+Find the existing page where autopays, recurring payments, or subscriptions are displayed.
+
+Possible files:
+- src/App.tsx
+- src/pages/Dashboard.tsx
+- src/pages/Home.tsx
+- client/src/App.tsx
+- client/src/pages/Dashboard.tsx
+- artifacts/*/src/App.tsx
+- artifacts/*/src/pages/Dashboard.tsx
+
+Import the component:
+
+import CancellationWorkflowPanel from "./components/CancellationWorkflowPanel";
+
+or if inside a pages folder:
+
+import CancellationWorkflowPanel from "../components/CancellationWorkflowPanel";
+
+Then map the existing autopay/subscription data into this shape:
+
+const workflowItems = existingSubscriptions.map((item) => ({
+  id: item.id,
+  merchantName:
+    item.merchantName ||
+    item.name ||
+    item.merchant ||
+    item.description ||
+    "Unknown Merchant",
+  amount:
+    Number(item.amount || item.monthlyAmount || item.price || item.cost || 0),
+  frequency:
+    item.frequency || item.billingCycle || "monthly",
+  nextChargeDate:
+    item.nextChargeDate || item.next_payment_date || item.date || "",
+  customerName:
+    user?.name || currentUser?.name || "",
+  customerEmail:
+    user?.email || currentUser?.email || "",
+  accountLastFour:
+    item.accountLastFour || item.cardLastFour || item.last4 || "",
+}));
+
+Then render this below the existing recurring payment list or above the current letter generator:
+
+<CancellationWorkflowPanel
+  items={workflowItems}
+  customerName={user?.name || currentUser?.name}
+  customerEmail={user?.email || currentUser?.email}
+/>
+
+If there is no user object, remove customerName and customerEmail props:
+
+<CancellationWorkflowPanel items={workflowItems} />
+
+==================================================
+IF EXISTING DATA VARIABLE IS UNCLEAR
+==================================================
+
+Search for variables named:
+
+- subscriptions
+- recurringPayments
+- autopays
+- transactions
+- plaidTransactions
+- detectedSubscriptions
+- merchants
+- payments
+
+Use the one that powers the current displayed list.
+
+Do NOT hardcode fake data unless there is no current recurring payment list at all.
+
+If temporary demo data is needed, clearly label it as demo data and place it behind a condition like:
+
+const workflowItems = existingSubscriptions?.length
+  ? existingSubscriptions.map(...)
+  : [];
+
+==================================================
+STYLE REQUIREMENTS
+==================================================
+
+Use the app’s existing style system if possible.
+
+If Tailwind is already installed, the className styles above are fine.
+
+If Tailwind is not installed, convert the styling to the app’s existing CSS style.
+
+Do not add new heavy UI libraries.
+
+==================================================
+FINAL TESTS
+==================================================
+
+After adding this:
+
+1. Run the app.
+2. Confirm the original cancellation letter still works.
+3. Confirm the new workflow panel appears.
+4. Confirm each item has a status dropdown.
+5. Change a status, refresh, and confirm it persists.
+6. Add proof notes, refresh, and confirm they persist.
+7. Generate each letter type:
+   - Cancel Subscription
+   - Refund Request
+   - Dispute Continued Charges
+8. Confirm alerts appear when nextChargeDate or dateSent exists.
+9. Confirm company directory appears for common merchants.
+10. Confirm no TypeScript errors.
+11. Confirm the build passes.
+12. Do not remove or rename existing API routes.
+
+Commit message:
+
+Add cancellation workflow tracker alerts proof vault company directory and refund dispute letters
