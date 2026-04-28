@@ -83,8 +83,11 @@ const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
+      // On 503 (server starting up), retry up to 3 times, honouring the Retry-After
+      // header sent by dbReadyCheck middleware. Cap at 3 to avoid long hang on
+      // persistent outages. ServiceStartingBanner shows a spinner during retries.
       retry: (failureCount, error) => {
-        if (error instanceof ApiError && error.status === 503) return failureCount < 10;
+        if (error instanceof ApiError && error.status === 503) return failureCount < 3;
         return false;
       },
       retryDelay: (_, error) => {
@@ -97,8 +100,9 @@ const queryClient = new QueryClient({
       staleTime: 5 * 60 * 1000,
     },
     mutations: {
+      // Same 3-attempt cap as queries for consistency during cold-start 503s.
       retry: (failureCount, error) => {
-        if (error instanceof ApiError && error.status === 503) return failureCount < 10;
+        if (error instanceof ApiError && error.status === 503) return failureCount < 3;
         return false;
       },
       retryDelay: (_, error) => {
