@@ -1,11 +1,12 @@
-import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, useClerk, useAuth as useClerkAuth, useUser } from "@clerk/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { setApiTokenProvider, setStartingUpCallback } from "@workspace/api-client-react";
+import { setApiTokenProvider } from "@workspace/api-client-react";
+import { StartingUpController } from "@/lib/use-starting-up";
 
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -189,52 +190,6 @@ function ClerkProviderWithRoutes() {
   );
 }
 
-// ── Starting-up banner ────────────────────────────────────────────────────────
-function useStartingUp() {
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
-  const qc = useQueryClient();
-
-  const handleStartingUp = useCallback((retryAfter: number) => {
-    setSecondsLeft(retryAfter);
-  }, []);
-
-  useEffect(() => {
-    setStartingUpCallback(handleStartingUp);
-    return () => { setStartingUpCallback(null); };
-  }, [handleStartingUp]);
-
-  useEffect(() => {
-    if (secondsLeft === null) return;
-    if (secondsLeft <= 0) {
-      setSecondsLeft(null);
-      qc.invalidateQueries();
-      return;
-    }
-    const t = setTimeout(() => setSecondsLeft((s) => (s !== null ? s - 1 : null)), 1000);
-    return () => clearTimeout(t);
-  }, [secondsLeft, qc]);
-
-  return secondsLeft;
-}
-
-function ServiceStartingBanner({ secondsLeft }: { secondsLeft: number }) {
-  return (
-    <div className="fixed top-0 inset-x-0 z-50 flex items-center justify-center gap-2 bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800">
-      <svg className="h-4 w-4 shrink-0 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-      </svg>
-      <span>
-        Service is starting up &mdash; retrying in <strong>{secondsLeft}s</strong>&hellip;
-      </span>
-    </div>
-  );
-}
-
-function StartingUpController() {
-  const secondsLeft = useStartingUp();
-  if (secondsLeft === null || secondsLeft <= 0) return null;
-  return <ServiceStartingBanner secondsLeft={secondsLeft} />;
-}
 
 function App() {
   return (

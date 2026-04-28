@@ -7,4 +7,5 @@ export {
   getApiBearerToken,
   ApiError,
   setStartingUpCallback,
+  setServiceReadyCallback,
 } from "./custom-fetch";

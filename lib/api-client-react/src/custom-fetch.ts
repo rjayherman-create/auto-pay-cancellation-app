@@ -12,6 +12,17 @@ export function setStartingUpCallback(fn: StartingUpCallback | null): void {
   _startingUpCallback = fn;
 }
 
+// ─── Global service-ready callback ────────────────────────────────────────────
+// Fired whenever a successful (2xx) response is received.
+// The UI registers this to dismiss the startup banner immediately
+// rather than waiting for the full countdown to expire.
+type ServiceReadyCallback = () => void;
+let _serviceReadyCallback: ServiceReadyCallback | null = null;
+
+export function setServiceReadyCallback(fn: ServiceReadyCallback | null): void {
+  _serviceReadyCallback = fn;
+}
+
 // ─── Global Clerk session token store ─────────────────────────────────────────
 // Store the Clerk getToken function so every request gets a fresh JWT.
 // Clerk session tokens expire in ~1 min; calling getToken() always returns
@@ -349,6 +360,10 @@ export async function customFetch<T = unknown>(
     }
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
+  }
+
+  if (_serviceReadyCallback) {
+    _serviceReadyCallback();
   }
 
   return (await parseSuccessBody(response, responseType, requestInfo)) as T;

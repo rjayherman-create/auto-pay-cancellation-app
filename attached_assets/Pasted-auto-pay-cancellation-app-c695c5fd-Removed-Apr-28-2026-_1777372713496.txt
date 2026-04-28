@@ -1,0 +1,65 @@
+auto-pay-cancellation-app
+/
+c695c5fd
+Removed
+
+Apr 28, 2026, 6:32 AM EDT
+auto-pay-cancellation-app-production.up.railway.app
+Details
+Build Logs
+Deploy Logs
+HTTP Logs
+Network Flow Logs
+Filter and search logs
+
+You reached the start of the range
+Apr 28, 2026, 6:32 AM
+Starting Container
+[Startup] DATABASE_URL: ✓ set
+[Startup] POSTGRES_URL: ✗ not set
+[Startup] PGHOST: ✗ not set
+[Startup] PGDATABASE: ✗ not set
+[Startup] PGUSER: ✗ not set
+> @workspace/api-server@0.0.0 start /app/artifacts/api-server
+> NODE_ENV=production node dist/index.mjs
+[Plaid] Credentials loaded. Environment: sandbox (https://sandbox.plaid.com)
+[Static] Serving frontend from: /app/artifacts/api-server/dist/public
+[Startup] NODE_ENV: production
+[Startup] PORT: 8080
+[Startup] PGPASSWORD: ✗ not set
+[Startup] JWT_SECRET: ✓ set
+[Startup] CLERK_SECRET_KEY: ✓ set
+[Startup] CLERK_PUBLISHABLE_KEY: ✓ set
+[Startup] VITE_CLERK_PUBLISHABLE_KEY: ✓ set (build-time)
+[Startup] PLAID_CLIENT_ID: ✓ set
+[Startup] STRIPE_SECRET_KEY: ✓ set
+[DB] Initializing schema (attempt 1/5)...
+[AutoPay Cancel API] Server listening on port 8080
+[DB] Running schema initialization...
+[DB] Schema ready.
+[DB] Schema ready.
+[Stripe] Billing ACTIVE (key: sk_test_... | env: production)
+[Stripe] Connected to Stripe account: acct_1TByZrAYpygKlmLI — billing ready.
+        ORDER BY id
+        LIMIT 20
+      )
+      SELECT
+        p.id AS product_id,
+        p.name AS product_name,
+        p.description AS product_description,
+        pr.id AS price_id,
+[Stripe] Error fetching plans: Failed query: 
+        pr.unit_amount,
+      WITH paginated_products AS (
+        pr.currency,
+        SELECT id, name, description, metadata, active
+        pr.recurring,
+        FROM stripe.products
+        pr.active AS price_active
+        WHERE active = true
+      FROM paginated_products p
+      LEFT JOIN stripe.prices pr ON pr.product = p.id AND pr.active = true
+      ORDER BY p.id, pr.unit_amount
+    
+params: 
+Stopping Contai
