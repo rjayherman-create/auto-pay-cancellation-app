@@ -3,7 +3,6 @@ import { initDb, pool } from "@workspace/db";
 import { setBillingState } from "./billingState.js";
 import { setDbState, getDbState } from "./dbState.js";
 import { startDbLivenessPing } from "./dbLivenessPing.js";
-import { resolveReplitWebhookDomain } from "./stripeEnvGuard.js";
 
 // ─── Startup diagnostics ──────────────────────────────────────────────────────
 console.log("[Startup] NODE_ENV:", process.env.NODE_ENV ?? "(not set)");
@@ -66,34 +65,15 @@ async function initStripe() {
     return;
   }
 
-  // Replit-managed sync only runs on the Replit platform (requires Replit's
-  // stripe-replit-sync DB schema which Railway does not provision).
-  const isReplit = !!(process.env.REPL_ID || process.env.REPLIT_DOMAINS);
-
-  if (isReplit) {
-    const databaseUrl = resolveDbUrl();
-    if (!databaseUrl) {
-      console.warn("[Stripe] No database URL — skipping Replit sync.");
-      return;
-    }
-    try {
-      const { runStripeSyncInit } = await import("./stripeSyncInit.js");
-      const domain = resolveReplitWebhookDomain(process.env);
-      await runStripeSyncInit({ databaseUrl, domain });
-    } catch (error: any) {
-      console.error("[Stripe] Initialization error:", error.message);
-    }
-  } else {
-    // Outside Replit (Railway, etc.) — use standard Stripe SDK directly.
-    // stripeService.ts already uses getUncachableStripeClient() which works here.
-    try {
-      const { getUncachableStripeClient } = await import("./stripeClient.js");
-      const stripe = await getUncachableStripeClient();
-      const account = await stripe.accounts.retrieve();
-      console.log("[Stripe] Connected to Stripe account:", account.id, "— billing ready.");
-    } catch (error: any) {
-      console.error("[Stripe] Failed to connect to Stripe:", error.message);
-    }
+  // Use standard Stripe SDK directly (works on Railway and any standard deployment).
+  // stripeService.ts already uses getUncachableStripeClient() which works here.
+  try {
+    const { getUncachableStripeClient } = await import("./stripeClient.js");
+    const stripe = await getUncachableStripeClient();
+    const account = await stripe.accounts.retrieve();
+    console.log("[Stripe] Connected to Stripe account:", account.id, "— billing ready.");
+  } catch (error: any) {
+    console.error("[Stripe] Failed to connect to Stripe:", error.message);
   }
 }
 
