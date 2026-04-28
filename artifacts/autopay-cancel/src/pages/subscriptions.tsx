@@ -11,6 +11,7 @@ import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth";
 import AutopaySavingsDashboard from "@/components/AutopaySavingsDashboard";
+import CancellationWorkflowPanel from "@/components/CancellationWorkflowPanel";
 import type { AutopayItem } from "@/lib/autopayTools";
 
 const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -193,6 +194,26 @@ export default function Subscriptions() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* ── Cancellation Workflow Panel ───────────────────────────────── */}
+      {!isLoading && (
+        <div className="mt-10">
+          <CancellationWorkflowPanel
+            items={(payments || []).map((p) => ({
+              id: String(p.id),
+              merchantName: p.merchantName,
+              amount: Number(p.amount || 0),
+              frequency: p.frequency || "monthly",
+              nextChargeDate: (p as any).nextChargeDate || "",
+              customerName: user?.name || "",
+              customerEmail: user?.email || "",
+              accountLastFour: (p as any).accountLastFour || (p as any).last4 || "",
+            }))}
+            customerName={user?.name}
+            customerEmail={user?.email}
+          />
         </div>
       )}
     </Layout>
