@@ -1,13 +1,12 @@
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { ClerkProvider, useClerk, useAuth as useClerkAuth } from "@clerk/react";
+import { ClerkProvider, useClerk, useAuth as useClerkAuth, useUser } from "@clerk/react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setApiTokenProvider } from "@workspace/api-client-react";
 
-import { useAuth } from "@/lib/auth";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import Onboarding from "@/pages/onboarding";
@@ -65,9 +64,9 @@ function ClerkQueryClientCacheInvalidator() {
 }
 
 function RootRedirect() {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return null;
-  return <Redirect to={user ? "/dashboard" : "/sign-in"} />;
+  const { isLoaded, isSignedIn } = useUser();
+  if (!isLoaded) return null;
+  return <Redirect to={isSignedIn ? "/dashboard" : "/sign-in"} />;
 }
 
 function Router() {

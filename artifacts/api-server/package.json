@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:billing": "tsx ./src/smoke-test-billing.ts",
     "test:env-guard": "tsx ./src/test-stripe-env-guard.ts",
-    "test:db-ping": "tsx ./src/test-db-liveness-ping.ts"
+    "test:db-ping": "tsx ./src/test-db-liveness-ping.ts",
+    "cleanup:preview-webhooks": "tsx ./src/cleanup-preview-webhooks.ts"
   },
   "dependencies": {
     "@clerk/express": "^2.1.9",

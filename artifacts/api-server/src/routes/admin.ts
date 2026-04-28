@@ -1,9 +1,12 @@
 import { Router, type IRouter } from "express";
 import { db, bankAccountsTable, recurringPaymentsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
 const router: IRouter = Router();
+
+const BYPASS_ALLOWED = () =>
+  process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_BYPASS === "true";
 
 // Helper: get or create a demo bank account for the user
 async function getOrCreateDemoAccount(userId: number) {
@@ -258,7 +261,13 @@ function daysFromNow(n: number) {
 
 // POST /api/admin/seed-demo
 // Resets the current user's data to a rich marketing/testing dataset.
+// Only available in development or when ENABLE_DEV_BYPASS=true.
 router.post("/seed-demo", requireAuth, async (req: AuthenticatedRequest, res) => {
+  if (!BYPASS_ALLOWED()) {
+    res.status(403).json({ error: "forbidden", message: "Demo seeding is not available in production." });
+    return;
+  }
+
   try {
     const userId = req.userId!;
     const account = await getOrCreateDemoAccount(userId);
