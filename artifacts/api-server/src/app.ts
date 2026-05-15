@@ -16,7 +16,7 @@ const MAX_DNS_HOSTNAME_LENGTH = 253;
 
 function getClerkFrontendApiHost(): string | null {
   const validHostnamePattern =
-    /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+    /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
 
   const key =
     process.env.CLERK_PUBLISHABLE_KEY ||
@@ -41,6 +41,7 @@ function getClerkFrontendApiHost(): string | null {
       .toLowerCase();
 
     if (decoded.length > MAX_DNS_HOSTNAME_LENGTH) return null;
+    if (!/^[\x20-\x7E]+$/.test(decoded)) return null;
     if (!decoded || !validHostnamePattern.test(decoded)) return null;
     return decoded;
   } catch {
