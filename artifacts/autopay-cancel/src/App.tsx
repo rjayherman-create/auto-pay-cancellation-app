@@ -163,7 +163,7 @@ function ClerkProviderWithRoutes() {
   );
 
   // Bypass mode: skip Clerk entirely — no network calls to Clerk servers
-  if (!isClerkEnabled || !clerkPubKey) return bare;
+  if (!isClerkEnabled) return bare;
 
   return (
     <ClerkErrorBoundary fallback={<ClerkUnavailableFallback />}>
