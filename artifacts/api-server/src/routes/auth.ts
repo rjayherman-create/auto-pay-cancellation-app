@@ -22,6 +22,7 @@ function getEffectiveClerkUserId(req: any): string | null {
 }
 
 router.get("/config", (_req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
   res.json(getPublicAuthConfig());
 });
 
