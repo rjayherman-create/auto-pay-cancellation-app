@@ -114,10 +114,14 @@ const allowedOrigins = [
   /localhost/,
 ];
 
+function isAllowedOrigin(origin: string): boolean {
+  return allowedOrigins.some((pattern) => pattern.test(origin));
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some((pattern) => pattern.test(origin))) {
+      if (!origin || isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -160,6 +164,40 @@ app.post(
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(cookieParser());
+
+// ─── CSRF Guard: block cross-site state-changing cookie requests ──────────────
+const stateChangingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+app.use((req, res, next) => {
+  if (!stateChangingMethods.has(req.method)) return next();
+  if (req.path === "/api/stripe/webhook") return next();
+
+  const origin = req.headers.origin;
+  if (origin) {
+    if (isAllowedOrigin(origin)) return next();
+    res.status(403).json({ error: "forbidden", message: "Blocked by CSRF protection" });
+    return;
+  }
+
+  const referer = req.headers.referer;
+  if (referer) {
+    try {
+      const refererOrigin = new URL(referer).origin;
+      if (isAllowedOrigin(refererOrigin)) return next();
+    } catch {
+      // ignore parse errors and fall through to cookie check below
+    }
+    res.status(403).json({ error: "forbidden", message: "Blocked by CSRF protection" });
+    return;
+  }
+
+  // If no Origin/Referer exists, only allow non-cookie requests
+  if (req.headers.cookie) {
+    res.status(403).json({ error: "forbidden", message: "Blocked by CSRF protection" });
+    return;
+  }
+
+  next();
+});
 
 // ─── Trust proxy (required for rate limiting behind Replit's proxy) ───────────
 app.set("trust proxy", 1);
