@@ -13,6 +13,35 @@ import { WebhookHandlers } from "./webhookHandlers.js";
 const app: Express = express();
 const isProd = process.env.NODE_ENV === "production";
 
+function getClerkFrontendApiHost(): string | null {
+  const key =
+    process.env.CLERK_PUBLISHABLE_KEY ||
+    process.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+  if (!key) return null;
+
+  const encoded = key.split("_")[2];
+  if (!encoded) return null;
+
+  try {
+    const decoded = Buffer.from(encoded, "base64")
+      .toString("utf8")
+      .replace(/\$/g, "")
+      .trim()
+      .toLowerCase();
+
+    if (!decoded || !/^[a-z0-9.-]+$/.test(decoded)) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+const clerkFrontendApiHost = getClerkFrontendApiHost();
+const clerkScriptAndFrameSources = clerkFrontendApiHost
+  ? [clerkFrontendApiHost]
+  : [];
+
 // ─── Clerk Proxy (must come first, before body parsers) ───────────────────────
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
@@ -28,9 +57,7 @@ app.use(
           "'unsafe-eval'",
           "js.stripe.com",
           "cdn.plaid.com",
-          "*.clerk.com",
-          "*.clerk.accounts.dev",
-          "*.clerkstage.com",
+          ...clerkScriptAndFrameSources,
         ],
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
@@ -41,9 +68,7 @@ app.use(
           "js.stripe.com",
           "hooks.stripe.com",
           "cdn.plaid.com",
-          "*.clerk.com",
-          "*.clerk.accounts.dev",
-          "*.clerkstage.com",
+          ...clerkScriptAndFrameSources,
         ],
         connectSrc: [
           "'self'",
