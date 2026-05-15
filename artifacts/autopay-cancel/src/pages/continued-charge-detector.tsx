@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, Copy, Download, FileSearch, Upload } from "lucide-react";
+import { AlertTriangle, Copy, Download, FileSearch } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -128,9 +128,9 @@ export default function ContinuedChargeDetector() {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Continued Charge Detector</h1>
-        <p className="mt-2 text-muted-foreground">
-          Upload statement evidence, detect charges after cancellation, and generate a dispute packet.
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-900">Continued Charge Detection</h1>
+        <p className="mt-2 text-zinc-600">
+          Identify recurring charges that continued after cancellation.
         </p>
       </div>
 
@@ -141,14 +141,14 @@ export default function ContinuedChargeDetector() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        <div className="space-y-6 lg:col-span-5">
-          <Card className="rounded-2xl border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle>Upload Evidence</CardTitle>
-              <CardDescription>Use bank statements, card screenshots, cancellation emails, or confirmations.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+        <CardContent className="space-y-8 p-8">
+          <section>
+            <h2 className="mb-2 text-xl font-bold text-zinc-900">Step 1 - Upload Statement</h2>
+            <p className="mb-5 text-sm text-zinc-500">
+              Add the merchant, cancellation date, and statement evidence so the detector can compare charge dates.
+            </p>
+            <div className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="merchantName">Merchant Name</Label>
                 <Input
@@ -168,11 +168,9 @@ export default function ContinuedChargeDetector() {
                   onChange={(event) => setCancellationDate(event.target.value)}
                 />
               </div>
+            </div>
 
-              <div className="rounded-xl border border-dashed border-slate-300 p-4">
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <Upload className="h-4 w-4" /> Evidence Upload Vault
-                </label>
+              <div className="mt-5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-5">
                 <Input
                   type="file"
                   multiple
@@ -194,47 +192,23 @@ export default function ContinuedChargeDetector() {
               <Button
                 onClick={analyzeCharges}
                 disabled={isAnalyzing || !merchantName.trim()}
-                className="w-full"
+                className="mt-5 bg-black text-white hover:bg-zinc-800"
               >
                 <FileSearch className="mr-2 h-4 w-4" />
                 {isAnalyzing ? "Analyzing..." : "Analyze Charges"}
               </Button>
-            </CardContent>
-          </Card>
+          </section>
 
-          <Card className="rounded-2xl border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle>Generated Dispute Packet</CardTitle>
-              <CardDescription>Bank dispute packet and merchant dispute letter source text.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Textarea
-                value={disputePacket}
-                readOnly
-                placeholder="Analyze evidence to generate a dispute packet."
-                className="min-h-[280px] font-mono text-xs"
-              />
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Button variant="outline" onClick={copyPacket} disabled={!disputePacket}>
-                  <Copy className="mr-2 h-4 w-4" />Copy Packet
-                </Button>
-                <Button onClick={exportPacketPdf} disabled={!disputePacket}>
-                  <Download className="mr-2 h-4 w-4" />Export PDF
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-6 lg:col-span-7">
-          <Card className="rounded-2xl border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle>AI Detection Results</CardTitle>
-              <CardDescription>Charges detected after the reported cancellation date.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <section>
+            <h2 className="mb-2 text-xl font-bold text-zinc-900">Step 2 - Review Charges</h2>
+            <p className="mb-5 text-sm text-zinc-500">
+              AI-assisted recurring charge analysis will appear here.
+            </p>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-xl bg-zinc-50 p-5">
+                <h3 className="mb-3 font-semibold text-zinc-900">Detected Continued Charges</h3>
               {!analysis ? (
-                <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
+                <div className="rounded-xl border border-dashed border-zinc-300 p-10 text-center text-zinc-500">
                   No analysis yet.
                 </div>
               ) : (
@@ -253,17 +227,12 @@ export default function ContinuedChargeDetector() {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+              </div>
 
-          <Card className="rounded-2xl border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle>Timeline</CardTitle>
-              <CardDescription>Cancellation request and post-cancellation charges.</CardDescription>
-            </CardHeader>
-            <CardContent>
+              <div className="rounded-xl bg-zinc-50 p-5">
+                <h3 className="mb-3 font-semibold text-zinc-900">Timeline</h3>
               {!analysis ? (
-                <p className="text-sm text-slate-500">Timeline will appear after analysis.</p>
+                <p className="text-sm text-zinc-500">Timeline will appear after analysis.</p>
               ) : (
                 <div className="space-y-4">
                   {analysis.timeline.map((item, index) => (
@@ -278,26 +247,43 @@ export default function ContinuedChargeDetector() {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
 
-          <Card className="rounded-2xl border-border/50 shadow-sm">
-            <CardHeader>
-              <CardTitle>Evidence Summary</CardTitle>
-              <CardDescription>Summary for bank escalation and merchant follow-up.</CardDescription>
-            </CardHeader>
-            <CardContent>
+            <div className="mt-6 rounded-xl bg-zinc-50 p-5">
+              <h3 className="mb-3 font-semibold text-zinc-900">Evidence Summary</h3>
               <pre className="min-h-[180px] whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                 {analysis?.evidenceSummary || "Evidence summary will appear here."}
               </pre>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
-          <p className="text-xs text-slate-500">
+          <section>
+            <h2 className="mb-2 text-xl font-bold text-zinc-900">Step 3 - Generate Dispute Packet</h2>
+            <p className="mb-5 text-sm text-zinc-500">
+              Create a packet source document you can copy or export for bank and merchant follow-up.
+            </p>
+            <Textarea
+              value={disputePacket}
+              readOnly
+              placeholder="Analyze evidence to generate a dispute packet."
+              className="min-h-[240px] font-mono text-xs"
+            />
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button className="bg-red-600 text-white hover:bg-red-700" onClick={exportPacketPdf} disabled={!disputePacket}>
+                <Download className="mr-2 h-4 w-4" />Generate Dispute Documents
+              </Button>
+              <Button variant="outline" onClick={copyPacket} disabled={!disputePacket}>
+                <Copy className="mr-2 h-4 w-4" />Copy Packet
+              </Button>
+            </div>
+          </section>
+
+          <p className="text-xs text-zinc-500">
             Legal Disclaimer: This tool assists users in organizing financial records and generating self-help dispute documents. We are not a law firm, bank, or financial advisor.
           </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </Layout>
   );
 }
