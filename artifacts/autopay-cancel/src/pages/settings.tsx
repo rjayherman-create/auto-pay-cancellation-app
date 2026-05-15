@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth as useClerkAuth } from "@clerk/react";
 import { Layout } from "@/components/layout";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -46,21 +45,18 @@ const FEATURES = [
 
 export default function Settings() {
   const { user, logout } = useAuth();
-  const { getToken } = useClerkAuth();
   const [location] = useLocation();
 
   const authFetch = useCallback(async (path: string, options: RequestInit = {}) => {
-    const token = await getToken();
     return fetch(`${API_BASE}${path}`, {
       ...options,
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers as Record<string, string> || {}),
       },
     });
-  }, [getToken]);
+  }, []);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [subStatus, setSubStatus] = useState<string>("none");
@@ -153,31 +149,38 @@ export default function Settings() {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Settings</h1>
-        <p className="text-muted-foreground mt-2">Manage your account and subscription.</p>
+        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
+          Next step: confirm account and billing
+        </p>
+        <h1 className="page-title gradient-text">Settings</h1>
+        <p className="mt-3 max-w-3xl text-slate-300">
+          Manage your account, billing, security, and sign-out options.
+        </p>
       </div>
 
-      <div className="max-w-2xl space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-6">
         {/* Profile */}
-        <Card className="shadow-sm border-border/50 rounded-2xl">
+        <Card className="app-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
+            <span className="badge-success w-fit">Account</span>
+            <CardTitle className="mt-3 flex items-center gap-2 text-xl text-white">
               <User className="h-5 w-5 text-primary" /> Profile
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xl">
+            <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-400/10 text-xl font-bold text-cyan-300">
                 {user.name.charAt(0)}
               </div>
               <div>
-                <div className="font-semibold text-slate-900">{user.name}</div>
-                <div className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
+                <div className="font-semibold text-white">{user.name}</div>
+                <div className="mt-0.5 flex items-center gap-1 text-sm text-slate-400">
                   <Mail className="h-3 w-3" /> {user.email}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-500 pl-1">
+            <div className="flex items-center gap-2 pl-1 text-sm text-slate-400">
               <Calendar className="h-4 w-4" />
               Member since {format(new Date(user.createdAt), "MMMM yyyy")}
             </div>
@@ -185,20 +188,21 @@ export default function Settings() {
         </Card>
 
         {/* Security Trust Badge */}
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100">
-          <Lock className="h-5 w-5 text-blue-600 shrink-0" />
-          <div className="text-sm text-blue-800">
+        <div className="flex items-center gap-3 rounded-xl border border-cyan-300/20 bg-cyan-400/10 p-4">
+          <Lock className="h-5 w-5 shrink-0 text-cyan-300" />
+          <div className="text-sm text-cyan-100">
             <span className="font-semibold">Bank-grade security:</span> Your data is encrypted with AES-256 at rest and TLS 1.3 in transit. We never store your bank credentials.
           </div>
         </div>
 
         {/* Subscription */}
-        <Card className="shadow-sm border-border/50 rounded-2xl">
+        <Card className="app-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
+            <span className="badge-success w-fit">Billing</span>
+            <CardTitle className="mt-3 flex items-center gap-2 text-xl text-white">
               <CreditCard className="h-5 w-5 text-primary" /> Subscription
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-slate-400">
               {isActive
                 ? "You have an active Pro subscription."
                 : isTrial
@@ -208,15 +212,15 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Current Status */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4">
               <div className="flex items-center gap-3">
                 <div className={`h-3 w-3 rounded-full ${isActive ? "bg-emerald-500" : isTrial ? "bg-amber-400" : "bg-slate-300"}`} />
                 <div>
-                  <div className="font-semibold text-slate-900">
+                  <div className="font-semibold text-white">
                     {isActive ? "Auto-Pay Cancel Pro" : isTrial ? "Free Trial" : "No Active Plan"}
                   </div>
                   {subscription?.currentPeriodEnd && (
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-400">
                       {subscription.cancelAtPeriodEnd ? "Cancels" : "Renews"} on{" "}
                       {format(new Date(subscription.currentPeriodEnd * 1000), "MMM d, yyyy")}
                     </div>
@@ -226,10 +230,10 @@ export default function Settings() {
               <Badge
                 className={
                   isActive
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    ? "border-emerald-300/30 bg-emerald-400/10 text-emerald-300"
                     : isTrial
-                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                    : "bg-slate-100 text-slate-600"
+                    ? "border-amber-300/30 bg-amber-400/10 text-amber-300"
+                    : "border-white/10 bg-white/5 text-slate-300"
                 }
                 variant="outline"
               >
@@ -241,7 +245,7 @@ export default function Settings() {
             {isActive && (
               <Button
                 variant="outline"
-                className="w-full"
+                className="btn-secondary w-full hover:bg-white/10"
                 onClick={handlePortal}
                 disabled={portalLoading}
               >
@@ -259,17 +263,17 @@ export default function Settings() {
               <>
                 <Separator />
                 <div>
-                  <h3 className="font-semibold text-slate-900 mb-1 flex items-center gap-2">
+                  <h3 className="mb-1 flex items-center gap-2 font-semibold text-white">
                     <Star className="h-4 w-4 text-amber-500" /> Upgrade to Pro
                   </h3>
-                  <p className="text-sm text-slate-500 mb-4">
+                  <p className="mb-4 text-sm text-slate-400">
                     Everything you need to take control of your subscriptions.
                   </p>
 
                   {/* Features list */}
                   <div className="grid grid-cols-1 gap-2 mb-6">
                     {FEATURES.map((f) => (
-                      <div key={f} className="flex items-center gap-2 text-sm text-slate-700">
+                      <div key={f} className="flex items-center gap-2 text-sm text-slate-300">
                         <Check className="h-4 w-4 text-emerald-500 shrink-0" />
                         {f}
                       </div>
@@ -282,7 +286,7 @@ export default function Settings() {
                       <Loader2 className="h-6 w-6 animate-spin text-primary" />
                     </div>
                   ) : plans.length === 0 ? (
-                    <div className="text-center py-6 text-slate-500 text-sm">
+                    <div className="py-6 text-center text-sm text-slate-400">
                       No plans available yet. Please check back soon.
                     </div>
                   ) : (
@@ -302,26 +306,26 @@ export default function Settings() {
                                 key={price.id}
                                 className={`relative flex items-center justify-between p-4 rounded-xl border-2 transition-colors ${
                                   isYear
-                                    ? "border-primary bg-primary/5"
-                                    : "border-slate-200 bg-white"
+                                    ? "border-cyan-300/50 bg-cyan-400/10"
+                                    : "border-white/10 bg-white/5"
                                 }`}
                               >
                                 {isYear && (
-                                  <span className="absolute -top-2.5 left-4 bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                  <span className="absolute -top-2.5 left-4 rounded-full bg-cyan-400 px-2 py-0.5 text-xs font-bold text-slate-950">
                                     Best Value
                                   </span>
                                 )}
                                 <div>
-                                  <div className="font-semibold text-slate-900 flex items-center gap-2">
+                                  <div className="flex items-center gap-2 font-semibold text-white">
                                     ${amount}
-                                    <span className="text-slate-400 font-normal text-sm">{label}</span>
+                                    <span className="text-sm font-normal text-slate-400">{label}</span>
                                     {savings && (
-                                      <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                      <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-2 py-0.5 text-xs font-semibold text-emerald-300">
                                         {savings}
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-xs text-slate-500 mt-0.5">
+                                  <div className="mt-0.5 text-xs text-slate-400">
                                     {isYear ? "Billed annually — $5.00/month" : "Billed monthly"}
                                   </div>
                                 </div>
@@ -359,24 +363,41 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Danger Zone */}
-        <Card className="shadow-sm rounded-2xl border-red-100">
+        </div>
+
+        <div className="space-y-6">
+        <Card className="app-card">
           <CardHeader>
-            <CardTitle className="text-xl text-red-600">Danger Zone</CardTitle>
-            <CardDescription>Irreversible actions for your account.</CardDescription>
+            <span className="badge-success w-fit">What to do next</span>
+            <CardTitle className="mt-3 text-white">Settings Checklist</CardTitle>
+            <CardDescription className="text-slate-400">Make sure the account is ready before starting cancellation workflows.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-slate-300">
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">Confirm your profile email is correct.</div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">Check whether your Pro plan or trial is active.</div>
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3">Use billing portal for invoices or subscription changes.</div>
+          </CardContent>
+        </Card>
+
+        {/* Danger Zone */}
+        <Card className="app-card border-red-400/30 bg-red-500/10">
+          <CardHeader>
+            <CardTitle className="text-xl text-red-300">Danger Zone</CardTitle>
+            <CardDescription className="text-slate-400">Irreversible actions for your account.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between pt-2">
               <div>
-                <div className="font-medium text-slate-900">Sign Out</div>
-                <div className="text-sm text-slate-500">Sign out on this device.</div>
+                <div className="font-medium text-white">Sign Out</div>
+                <div className="text-sm text-slate-400">Sign out on this device.</div>
               </div>
-              <Button variant="outline" onClick={() => logout()}>
+              <Button className="btn-secondary hover:bg-white/10" variant="outline" onClick={() => logout()}>
                 Sign Out
               </Button>
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </Layout>
   );
