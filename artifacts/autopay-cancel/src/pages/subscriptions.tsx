@@ -241,7 +241,7 @@ function SubscriptionCard({
           Upload Proof
         </Link>
         <Link
-          href={`/documents?paymentId=${id}`}
+          href={`/letter-generator?paymentId=${id}`}
           className="rounded-xl border border-zinc-300 px-4 py-2 font-semibold text-zinc-800 hover:bg-zinc-50"
         >
           Generate Letter

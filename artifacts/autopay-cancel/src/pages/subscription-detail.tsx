@@ -106,17 +106,17 @@ export default function SubscriptionDetail() {
 
           <Card className="rounded-2xl border-border/50 shadow-sm bg-blue-50/50 border-blue-100">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-blue-900"><FileText className="h-5 w-5 text-blue-600" /> Generate Documents</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-blue-900"><FileText className="h-5 w-5 text-blue-600" /> Generate Letters</CardTitle>
               <CardDescription className="text-blue-800/70">Create legal requests to force cancellation.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Link href={`/documents?paymentId=${id}&type=email`} className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 text-blue-700 h-10 rounded-xl hover:bg-blue-50 font-medium text-sm transition-colors">
+              <Link href={`/letter-generator?paymentId=${id}&type=email`} className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 text-blue-700 h-10 rounded-xl hover:bg-blue-50 font-medium text-sm transition-colors">
                 Email Template
               </Link>
-              <Link href={`/documents?paymentId=${id}&type=ach`} className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 text-blue-700 h-10 rounded-xl hover:bg-blue-50 font-medium text-sm transition-colors">
+              <Link href={`/letter-generator?paymentId=${id}&type=ach`} className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 text-blue-700 h-10 rounded-xl hover:bg-blue-50 font-medium text-sm transition-colors">
                 ACH Revocation
               </Link>
-              <Link href={`/documents?paymentId=${id}&type=stop`} className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 text-blue-700 h-10 rounded-xl hover:bg-blue-50 font-medium text-sm transition-colors">
+              <Link href={`/letter-generator?paymentId=${id}&type=stop`} className="w-full flex items-center justify-center gap-2 bg-white border border-blue-200 text-blue-700 h-10 rounded-xl hover:bg-blue-50 font-medium text-sm transition-colors">
                 Stop Payment Form
               </Link>
             </CardContent>

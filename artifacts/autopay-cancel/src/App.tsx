@@ -16,7 +16,7 @@ const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Subscriptions = lazy(() => import("@/pages/subscriptions"));
 const SubscriptionDetail = lazy(() => import("@/pages/subscription-detail"));
 const Accounts = lazy(() => import("@/pages/accounts"));
-const Documents = lazy(() => import("@/pages/documents"));
+const LetterGenerator = lazy(() => import("@/pages/documents"));
 const EvidenceVault = lazy(() => import("@/pages/evidence-vault"));
 const Settings = lazy(() => import("@/pages/settings"));
 const DisputesPage = lazy(() => import("@/pages/disputes"));
@@ -110,7 +110,8 @@ function Router() {
         <Route path="/subscriptions" component={Subscriptions} />
         <Route path="/subscriptions/:id" component={SubscriptionDetail} />
         <Route path="/accounts" component={Accounts} />
-        <Route path="/documents" component={Documents} />
+        <Route path="/letter-generator" component={LetterGenerator} />
+        <Route path="/documents"><ReplaceRedirect to="/evidence-vault" /></Route>
         <Route path="/evidence-vault" component={EvidenceVault} />
         <Route path="/settings" component={Settings} />
         <Route path="/disputes" component={DisputesPage} />

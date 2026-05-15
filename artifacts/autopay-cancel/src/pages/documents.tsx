@@ -127,8 +127,8 @@ export default function Documents() {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Legal Documents</h1>
-        <p className="text-muted-foreground mt-2">Generate official templates to enforce cancellations.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Letter Generator</h1>
+        <p className="text-muted-foreground mt-2">Generate cancellation letters, ACH revocation letters, and stop-payment requests for your evidence vault.</p>
       </div>
 
       <div className="grid lg:grid-cols-12 gap-8">
@@ -171,7 +171,7 @@ export default function Documents() {
                 className="w-full h-12 shadow-md shadow-primary/20"
               >
                 {isPending ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <FileText className="h-5 w-5 mr-2" />}
-                Generate Document
+                Generate Letter
               </Button>
             </CardContent>
           </Card>
@@ -194,7 +194,7 @@ export default function Documents() {
                {!generatedText ? (
                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
                    <FileText className="h-16 w-16 mb-4 opacity-20" />
-                   <p className="text-lg font-medium text-slate-500">Document preview will appear here</p>
+                  <p className="text-lg font-medium text-slate-500">Letter preview will appear here</p>
                    <p className="text-sm">Select options on the left and click Generate.</p>
                  </div>
                ) : (

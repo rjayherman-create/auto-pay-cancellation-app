@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 import { Layout } from "@/components/layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,9 +48,9 @@ export default function EvidenceVaultPage() {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Evidence Vault</h1>
-        <p className="mt-2 max-w-3xl text-muted-foreground">
-          Keep cancellation screenshots, statements, confirmation numbers, emails, and receipts organized before creating dispute packets.
+        <h1 className="text-4xl font-bold tracking-tight text-zinc-900">Evidence Vault</h1>
+        <p className="mt-2 max-w-3xl text-zinc-600">
+          Store proof of cancellations, disputes, and communications.
         </p>
       </div>
 
@@ -67,9 +68,12 @@ export default function EvidenceVaultPage() {
           <CardContent>
             <label className="flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition-colors hover:border-primary/50 hover:bg-primary/5">
               <UploadCloud className="mb-4 h-10 w-10 text-slate-400" />
-              <span className="text-base font-semibold text-slate-900">Choose evidence files</span>
+              <span className="text-2xl font-bold text-zinc-900">Upload Proof & Documentation</span>
               <span className="mt-2 max-w-md text-sm text-slate-500">
-                Upload cancellation emails, billing screenshots, bank statements, chat logs, certified mail receipts, and confirmation images.
+                Save screenshots, cancellation confirmations, bank statements, and generated letters.
+              </span>
+              <span className="mt-6 rounded-xl bg-black px-6 py-3 font-semibold text-white">
+                Upload Files
               </span>
               <input
                 type="file"
@@ -134,6 +138,23 @@ export default function EvidenceVaultPage() {
               <Button className="w-full" disabled={files.length === 0}>
                 Attach to Dispute Packet
               </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Generate Letters</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-slate-600">
+                Create cancellation, ACH revocation, and stop-payment letters, then save the generated output as proof.
+              </p>
+              <Link
+                href="/letter-generator"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800"
+              >
+                Open Letter Generator
+              </Link>
             </CardContent>
           </Card>
 
