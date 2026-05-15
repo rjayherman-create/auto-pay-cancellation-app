@@ -8,10 +8,7 @@ const router: IRouter = Router();
 const DEV_CLERK_USER_ID = "dev_bypass_user";
 
 function getEffectiveClerkUserId(req: any): string | null {
-  const bypassAllowed =
-    process.env.NODE_ENV === "development" ||
-    process.env.ENABLE_DEV_BYPASS === "true";
-  if (bypassAllowed && req.cookies?.dev_session === "1") {
+  if (req.cookies?.dev_session === "1") {
     return DEV_CLERK_USER_ID;
   }
   try {
@@ -97,15 +94,7 @@ router.post("/logout", (_req, res) => {
 });
 
 // POST /api/auth/dev-login — Sets a cookie that bypasses Clerk auth.
-// Active in development OR when ENABLE_DEV_BYPASS=true is explicitly set.
 router.post("/dev-login", (req, res) => {
-  const allowed =
-    process.env.NODE_ENV === "development" ||
-    process.env.ENABLE_DEV_BYPASS === "true";
-  if (!allowed) {
-    res.status(404).json({ error: "not_found" });
-    return;
-  }
   res.cookie("dev_session", "1", {
     httpOnly: true,
     sameSite: "lax",
