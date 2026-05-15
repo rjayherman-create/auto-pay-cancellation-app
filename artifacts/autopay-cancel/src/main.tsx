@@ -10,7 +10,7 @@ const hasBuildTimeAuthConfig =
 if (hasBuildTimeAuthConfig) {
   await Promise.race([
     loadRuntimeAuthConfig(),
-    new Promise((resolve) => window.setTimeout(resolve, 800)),
+    new Promise((resolve) => window.setTimeout(resolve, 250)),
   ]);
 } else {
   await loadRuntimeAuthConfig();

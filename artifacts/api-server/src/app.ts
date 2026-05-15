@@ -10,7 +10,12 @@ import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxy
 import router from "./routes/index.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
-import { getClerkPublishableKey, hasClerkRuntimeConfig, isDevBypassAllowed } from "./authConfig.js";
+import {
+  getClerkPublishableKey,
+  getPublicAuthConfig,
+  hasClerkRuntimeConfig,
+  isDevBypassAllowed,
+} from "./authConfig.js";
 import { registerPublicBenefitCenter } from "./publicBenefitCenter.js";
 
 const app: Express = express();
@@ -207,6 +212,11 @@ app.set("trust proxy", 1);
 
 // Public consumer-rights pages and resource APIs must register before the SPA catch-all.
 registerPublicBenefitCenter(app);
+
+app.get("/api/auth/config", (_req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
+  res.json(getPublicAuthConfig());
+});
 
 // ─── Clerk Middleware ─────────────────────────────────────────────────────────
 // Skip Clerk token validation when:
