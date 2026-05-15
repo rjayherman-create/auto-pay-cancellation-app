@@ -121,16 +121,20 @@ router.post("/generate-letter", requireAuth, async (req: AuthenticatedRequest, r
       merchantName,
       bankName,
       paymentType,
+      accountLast4,
       lastChargeAmount,
       lastChargeDate,
+      cancellationDate,
       disputeReason,
     } = req.body as {
       disputeId?: number;
       merchantName?: string;
       bankName?: string;
       paymentType?: string;
+      accountLast4?: string;
       lastChargeAmount?: string;
       lastChargeDate?: string;
+      cancellationDate?: string;
       disputeReason?: string;
     };
 
@@ -139,23 +143,36 @@ router.post("/generate-letter", requireAuth, async (req: AuthenticatedRequest, r
       return;
     }
 
-    const mode = paymentType === "CARD" ? "recurring card charges" : "ACH withdrawals";
+    const normalizedPaymentType = String(paymentType || "ACH").toUpperCase();
+    const mode = normalizedPaymentType === "CARD" ? "recurring card charges" : "ACH withdrawals";
+    const requestTitle =
+      normalizedPaymentType === "CARD"
+        ? "Recurring Card Charge Dispute and Revocation of Authorization"
+        : "ACH Stop Payment Request and Revocation of Authorization";
+    const accountLine = accountLast4?.trim()
+      ? `Account/Card Ending In: ${accountLast4.trim()}\n`
+      : "";
+    const cancellationLine = cancellationDate?.trim()
+      ? `Cancellation Date: ${cancellationDate.trim()}\n`
+      : "";
 
     const letter = `To: ${bankName}
+
+Re: ${requestTitle}
 
 I am formally requesting that you stop all future ${mode} from:
 
 Merchant: ${merchantName}
 
-Last Charge Amount: ${lastChargeAmount || "Unknown"}
+${accountLine}Last Charge Amount: ${lastChargeAmount || "Unknown"}
 Last Charge Date: ${lastChargeDate || "Unknown"}
-
+${cancellationLine}
 Reason:
 ${disputeReason || "Unauthorized recurring charge after cancellation request"}
 
-I revoke authorization for any future debits or recurring charges associated with this merchant.
+I revoke authorization for any future debits, ACH withdrawals, card-on-file charges, or recurring charges associated with this merchant.
 
-Please block future transactions immediately.
+Please block future transactions immediately, document this request in my account notes, and provide written confirmation of the stop payment or dispute action taken.
 
 Sincerely,
 Account Holder

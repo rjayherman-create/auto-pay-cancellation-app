@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - '**'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN || secrets.RAILWAY_API_TOKEN || vars.RAILWAY_TOKEN || vars.RAILWAY_API_TOKEN }}
+  RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE_ID || secrets.RAILWAY_SERVICE_NAME || vars.RAILWAY_SERVICE_ID || vars.RAILWAY_SERVICE_NAME }}
+  RAILWAY_ENVIRONMENT_TARGET: ${{ secrets.RAILWAY_ENVIRONMENT_ID || secrets.RAILWAY_ENVIRONMENT_NAME || vars.RAILWAY_ENVIRONMENT_ID || vars.RAILWAY_ENVIRONMENT_NAME }}
 
 jobs:
   deploy:
@@ -31,4 +34,15 @@ jobs:
         run: npm install -g @railway/cli@4.58.0
 
       - name: Deploy to Railway
-        run: railway up --detach
+        run: |
+          args=(--ci --yes)
+
+          if [ -n "$RAILWAY_SERVICE" ]; then
+            args+=(--service "$RAILWAY_SERVICE")
+          fi
+
+          if [ -n "$RAILWAY_ENVIRONMENT_TARGET" ]; then
+            args+=(--environment "$RAILWAY_ENVIRONMENT_TARGET")
+          fi
+
+          railway up "${args[@]}"
