@@ -12,6 +12,47 @@ import { WebhookHandlers } from "./webhookHandlers.js";
 
 const app: Express = express();
 const isProd = process.env.NODE_ENV === "production";
+const MAX_DNS_HOSTNAME_LENGTH = 253;
+
+function getClerkFrontendApiHost(): string | null {
+  const validHostnamePattern =
+    /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
+
+  const key =
+    process.env.CLERK_PUBLISHABLE_KEY ||
+    process.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+  if (!key) return null;
+
+  // Clerk key format: pk_<env>_<base64(frontend-api-host)>[...optional suffixes]
+  const keyParts = key.split("_");
+  if (keyParts.length < 3) return null;
+
+  const encoded = keyParts[2];
+  if (!encoded) return null;
+
+  try {
+    // Clerk publishable keys can decode to a hostname with trailing "$" markers.
+    // Strip only trailing markers before hostname validation and CSP insertion.
+    const decoded = Buffer.from(encoded, "base64")
+      .toString("utf8")
+      .replace(/\$+$/, "")
+      .trim()
+      .toLowerCase();
+
+    if (decoded.length > MAX_DNS_HOSTNAME_LENGTH) return null;
+    if (!/^[\x20-\x7E]+$/.test(decoded)) return null;
+    if (!decoded || !validHostnamePattern.test(decoded)) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+const clerkFrontendApiHost = getClerkFrontendApiHost();
+const clerkFrontendApiSources = clerkFrontendApiHost
+  ? [clerkFrontendApiHost]
+  : [];
 
 // ─── Clerk Proxy (must come first, before body parsers) ───────────────────────
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
@@ -22,12 +63,25 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "js.stripe.com", "cdn.plaid.com"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "'unsafe-eval'",
+          "js.stripe.com",
+          "cdn.plaid.com",
+          ...clerkFrontendApiSources,
+        ],
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
         styleSrcElem: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
         fontSrc: ["'self'", "data:", "fonts.gstatic.com"],
-        frameSrc: ["'self'", "js.stripe.com", "hooks.stripe.com", "cdn.plaid.com"],
+        frameSrc: [
+          "'self'",
+          "js.stripe.com",
+          "hooks.stripe.com",
+          "cdn.plaid.com",
+          ...clerkFrontendApiSources,
+        ],
         connectSrc: [
           "'self'",
           "api.stripe.com",
