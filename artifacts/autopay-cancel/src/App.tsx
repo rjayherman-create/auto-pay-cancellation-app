@@ -1,5 +1,5 @@
 import { Component, useEffect, useRef, useState, type ReactNode } from "react";
-import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, useClerk, useAuth as useClerkAuth, useUser } from "@clerk/react";
 import { Toaster } from "@/components/ui/toaster";
@@ -65,14 +65,34 @@ function ClerkQueryClientCacheInvalidator() {
 // Clerk-aware redirect — only rendered when ClerkProvider is active
 function RootRedirectClerk() {
   const { isLoaded, isSignedIn } = useUser();
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    if (isLoaded) {
+      setLocation(isSignedIn ? "/dashboard" : "/sign-in", { replace: true });
+    }
+  }, [isLoaded, isSignedIn, setLocation]);
   if (!isLoaded) return null;
-  return <Redirect to={isSignedIn ? "/dashboard" : "/sign-in"} />;
+  return null;
 }
 
 // Bypass-mode redirect — no Clerk hooks, just go to sign-in (which auto-logs in)
 function RootRedirect() {
-  if (!isClerkEnabled) return <Redirect to="/sign-in" />;
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    if (!isClerkEnabled) {
+      setLocation("/sign-in", { replace: true });
+    }
+  }, [setLocation]);
+  if (!isClerkEnabled) return null;
   return <RootRedirectClerk />;
+}
+
+function ReplaceRedirect({ to }: { to: string }) {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    setLocation(to, { replace: true });
+  }, [setLocation, to]);
+  return null;
 }
 
 function Router() {
@@ -80,8 +100,8 @@ function Router() {
     <Switch>
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
-      <Route path="/login"><Redirect to="/sign-in" /></Route>
-      <Route path="/register"><Redirect to="/sign-up" /></Route>
+      <Route path="/login"><ReplaceRedirect to="/sign-in" /></Route>
+      <Route path="/register"><ReplaceRedirect to="/sign-up" /></Route>
       <Route path="/" component={RootRedirect} />
       <Route path="/onboarding" component={Onboarding} />
       <Route path="/dashboard" component={Dashboard} />
