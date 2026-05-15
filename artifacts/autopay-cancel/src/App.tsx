@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, useClerk, useAuth as useClerkAuth, useUser } from "@clerk/react";
@@ -9,18 +9,18 @@ import { setApiTokenProvider } from "@workspace/api-client-react";
 import { StartingUpController } from "@/lib/use-starting-up";
 import { basePath, clerkProxyUrl, clerkPubKey, isClerkEnabled, isDevBypassEnabled } from "@/lib/auth-mode";
 
-import SignInPage from "@/pages/sign-in";
-import SignUpPage from "@/pages/sign-up";
-import Onboarding from "@/pages/onboarding";
-import Dashboard from "@/pages/dashboard";
-import Subscriptions from "@/pages/subscriptions";
-import SubscriptionDetail from "@/pages/subscription-detail";
-import Accounts from "@/pages/accounts";
-import Documents from "@/pages/documents";
-import Settings from "@/pages/settings";
-import DisputesPage from "@/pages/disputes";
-import ContinuedChargeDetector from "@/pages/continued-charge-detector";
-import NotFound from "@/pages/not-found";
+const SignInPage = lazy(() => import("@/pages/sign-in"));
+const SignUpPage = lazy(() => import("@/pages/sign-up"));
+const Onboarding = lazy(() => import("@/pages/onboarding"));
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const Subscriptions = lazy(() => import("@/pages/subscriptions"));
+const SubscriptionDetail = lazy(() => import("@/pages/subscription-detail"));
+const Accounts = lazy(() => import("@/pages/accounts"));
+const Documents = lazy(() => import("@/pages/documents"));
+const Settings = lazy(() => import("@/pages/settings"));
+const DisputesPage = lazy(() => import("@/pages/disputes"));
+const ContinuedChargeDetector = lazy(() => import("@/pages/continued-charge-detector"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
@@ -97,23 +97,33 @@ function ReplaceRedirect({ to }: { to: string }) {
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/sign-in/*?" component={SignInPage} />
-      <Route path="/sign-up/*?" component={SignUpPage} />
-      <Route path="/login"><ReplaceRedirect to="/sign-in" /></Route>
-      <Route path="/register"><ReplaceRedirect to="/sign-up" /></Route>
-      <Route path="/" component={RootRedirect} />
-      <Route path="/onboarding" component={Onboarding} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/subscriptions" component={Subscriptions} />
-      <Route path="/subscriptions/:id" component={SubscriptionDetail} />
-      <Route path="/accounts" component={Accounts} />
-      <Route path="/documents" component={Documents} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/dashboard/disputes" component={DisputesPage} />
-      <Route path="/dashboard/continued-charge-detector" component={ContinuedChargeDetector} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<PageLoading />}>
+      <Switch>
+        <Route path="/sign-in/*?" component={SignInPage} />
+        <Route path="/sign-up/*?" component={SignUpPage} />
+        <Route path="/login"><ReplaceRedirect to="/sign-in" /></Route>
+        <Route path="/register"><ReplaceRedirect to="/sign-up" /></Route>
+        <Route path="/" component={RootRedirect} />
+        <Route path="/onboarding" component={Onboarding} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/subscriptions" component={Subscriptions} />
+        <Route path="/subscriptions/:id" component={SubscriptionDetail} />
+        <Route path="/accounts" component={Accounts} />
+        <Route path="/documents" component={Documents} />
+        <Route path="/settings" component={Settings} />
+        <Route path="/dashboard/disputes" component={DisputesPage} />
+        <Route path="/dashboard/continued-charge-detector" component={ContinuedChargeDetector} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
+  );
+}
+
+function PageLoading() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 text-sm text-slate-500">
+      Loading...
+    </div>
   );
 }
 
