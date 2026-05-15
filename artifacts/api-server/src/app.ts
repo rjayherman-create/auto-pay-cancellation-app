@@ -111,14 +111,24 @@ app.use(cookieParser());
 app.set("trust proxy", 1);
 
 // ─── Clerk Middleware ─────────────────────────────────────────────────────────
-// Skip Clerk token validation when the dev bypass cookie is active — avoids
-// network hangs when Clerk dev keys are rate-limited.
+// Skip Clerk token validation when:
+//   1. The dev bypass cookie is active (avoids network hangs with rate-limited keys), OR
+//   2. No CLERK_PUBLISHABLE_KEY is configured (local dev without Clerk set up).
+//      In this case unauthenticated routes work freely; protected routes still
+//      require either the dev_session cookie or a real Clerk token.
 const _clerkMw = clerkMiddleware();
+const _hasClerkPublishableKey = !!(
+  process.env.CLERK_PUBLISHABLE_KEY ||
+  process.env.VITE_CLERK_PUBLISHABLE_KEY
+);
 app.use((req, res, next) => {
   const bypassAllowed =
     process.env.NODE_ENV === "development" ||
     process.env.ENABLE_DEV_BYPASS === "true";
   if (bypassAllowed && (req.cookies as Record<string, string>)?.dev_session === "1") {
+    return next();
+  }
+  if (!_hasClerkPublishableKey) {
     return next();
   }
   return _clerkMw(req, res, next);
