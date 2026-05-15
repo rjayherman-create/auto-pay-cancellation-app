@@ -30,6 +30,8 @@ function getClerkFrontendApiHost(): string | null {
   if (!encoded) return null;
 
   try {
+    // Clerk publishable keys can decode to a hostname with a trailing "$" marker.
+    // Strip it before hostname validation and CSP insertion.
     const decoded = Buffer.from(encoded, "base64")
       .toString("utf8")
       .replace(/\$/g, "")
