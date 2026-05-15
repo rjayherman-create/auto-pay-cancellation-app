@@ -99,6 +99,14 @@ export async function initDb(): Promise<void> {
         CREATE TYPE action_type AS ENUM ('cancelled','detected','disputed','saved');
       EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+      DO $$ BEGIN
+        CREATE TYPE dispute_payment_type AS ENUM ('ACH','CARD');
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+      DO $$ BEGIN
+        CREATE TYPE dispute_status AS ENUM ('draft','generated','sent_to_merchant','sent_to_bank','waiting','resolved','still_charging');
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
       -- Tables
       CREATE TABLE IF NOT EXISTS users (
         id                    SERIAL PRIMARY KEY,
@@ -157,6 +165,24 @@ export async function initDb(): Promise<void> {
         amount        REAL NOT NULL DEFAULT 0,
         description   TEXT NOT NULL,
         created_at    TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS payment_disputes (
+        id                SERIAL PRIMARY KEY,
+        user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        merchant_name     TEXT NOT NULL,
+        bank_name         TEXT NOT NULL,
+        payment_type      dispute_payment_type NOT NULL,
+        account_last4     TEXT,
+        last_charge_amount TEXT,
+        last_charge_date  TEXT,
+        cancellation_date TEXT,
+        dispute_reason    TEXT,
+        status            dispute_status NOT NULL DEFAULT 'draft',
+        evidence_files    JSONB,
+        generated_letter  TEXT,
+        created_at        TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at        TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `);
     console.log("[DB] Schema ready.");

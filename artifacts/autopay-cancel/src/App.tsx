@@ -18,6 +18,7 @@ import SubscriptionDetail from "@/pages/subscription-detail";
 import Accounts from "@/pages/accounts";
 import Documents from "@/pages/documents";
 import Settings from "@/pages/settings";
+import DisputesPage from "@/pages/disputes";
 import NotFound from "@/pages/not-found";
 
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/accounts" component={Accounts} />
       <Route path="/documents" component={Documents} />
       <Route path="/settings" component={Settings} />
+      <Route path="/dashboard/disputes" component={DisputesPage} />
       <Route component={NotFound} />
     </Switch>
   );
