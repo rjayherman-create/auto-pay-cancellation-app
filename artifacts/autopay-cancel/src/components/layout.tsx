@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { Redirect } from "wouter";
 import { Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MasterDisclaimer } from "@/components/MasterDisclaimer";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, logout } = useAuth();
@@ -50,6 +51,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </header>
           <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
             {children}
+            <div className="mt-8">
+              <MasterDisclaimer />
+            </div>
           </main>
         </div>
       </div>

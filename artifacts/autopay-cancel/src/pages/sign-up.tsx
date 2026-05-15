@@ -1,5 +1,6 @@
 import { SignUp } from "@clerk/react";
 import { basePath, isClerkEnabled } from "@/lib/auth-mode";
+import { MasterDisclaimer } from "@/components/MasterDisclaimer";
 
 export default function SignUpPage() {
   if (!isClerkEnabled) {
@@ -11,18 +12,24 @@ export default function SignUpPage() {
             Sign up is unavailable right now. Please contact your administrator to configure authentication.
           </p>
         </div>
+        <div className="mt-4 w-full max-w-2xl">
+          <MasterDisclaimer compact />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-slate-50 px-4 py-8">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
         fallbackRedirectUrl={`${basePath}/dashboard`}
       />
+      <div className="w-full max-w-2xl">
+        <MasterDisclaimer compact />
+      </div>
     </div>
   );
 }

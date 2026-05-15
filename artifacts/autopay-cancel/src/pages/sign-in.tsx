@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SignIn } from "@clerk/react";
 import { basePath, isClerkEnabled, isDevBypassEnabled } from "@/lib/auth-mode";
+import { MasterDisclaimer } from "@/components/MasterDisclaimer";
 
 export default function SignInPage() {
   const [loading, setLoading] = useState(isDevBypassEnabled);
@@ -49,6 +50,9 @@ export default function SignInPage() {
             </>
           )}
         </div>
+        <div className="w-full max-w-2xl">
+          <MasterDisclaimer compact />
+        </div>
       </div>
     );
   }
@@ -62,19 +66,25 @@ export default function SignInPage() {
             Sign in is unavailable right now. Please contact your administrator to configure authentication.
           </p>
         </div>
+        <div className="mt-4 w-full max-w-2xl">
+          <MasterDisclaimer compact />
+        </div>
       </div>
     );
   }
 
   // Normal mode: show Clerk sign-in widget
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-slate-50 px-4 py-8">
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
         fallbackRedirectUrl={`${basePath}/dashboard`}
       />
+      <div className="w-full max-w-2xl">
+        <MasterDisclaimer compact />
+      </div>
     </div>
   );
 }
