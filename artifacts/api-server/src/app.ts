@@ -12,6 +12,7 @@ import { WebhookHandlers } from "./webhookHandlers.js";
 
 const app: Express = express();
 const isProd = process.env.NODE_ENV === "production";
+const MAX_DNS_HOSTNAME_LENGTH = 253;
 
 function getClerkFrontendApiHost(): string | null {
   const validHostnamePattern =
@@ -23,6 +24,7 @@ function getClerkFrontendApiHost(): string | null {
 
   if (!key) return null;
 
+  // Clerk key format: pk_<env>_<base64(frontend-api-host)>[...optional suffixes]
   const keyParts = key.split("_");
   if (keyParts.length < 3) return null;
 
@@ -38,7 +40,7 @@ function getClerkFrontendApiHost(): string | null {
       .trim()
       .toLowerCase();
 
-    if (decoded.length > 253) return null;
+    if (decoded.length > MAX_DNS_HOSTNAME_LENGTH) return null;
     if (!decoded || !validHostnamePattern.test(decoded)) return null;
     return decoded;
   } catch {
