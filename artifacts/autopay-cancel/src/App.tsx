@@ -170,7 +170,7 @@ function ClerkProviderWithRoutes() {
   return (
     <ClerkErrorBoundary fallback={<ClerkUnavailableFallback />}>
       <ClerkProvider
-        publishableKey={clerkPubKey}
+        publishableKey={clerkPubKey!}
         proxyUrl={clerkProxyUrl || undefined}
         signInUrl={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
