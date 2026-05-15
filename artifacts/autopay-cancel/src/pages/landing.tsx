@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  BarChart3,
   Bell,
   Building2,
   CalendarDays,
@@ -10,7 +9,6 @@ import {
   Play,
   Shield,
   ShieldCheck,
-  TrendingUp,
   Zap,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -121,8 +119,6 @@ export default function LandingPage() {
           </div>
 
           <div className="relative mx-auto w-full max-w-[760px] lg:mx-0">
-            <FloatingSavingsCard />
-            <SuccessRateCard />
             <DashboardMockup />
           </div>
         </section>
@@ -262,28 +258,6 @@ function AlertRow({
       <button className="rounded-lg border border-cyan-100/15 bg-white/[0.035] px-4 py-3 text-sm text-white transition hover:border-cyan-300/40 hover:bg-cyan-300/10">
         {action}
       </button>
-    </div>
-  );
-}
-
-function FloatingSavingsCard() {
-  return (
-    <div className="absolute -left-16 top-32 z-10 hidden w-36 rounded-xl border border-cyan-300/70 bg-[#071326]/85 p-5 text-center shadow-[0_0_36px_rgba(34,211,238,0.22)] backdrop-blur-xl xl:block">
-      <Shield className="mx-auto mb-3 h-10 w-10 text-cyan-300" />
-      <div className="text-base">Charges<br />Prevented</div>
-      <div className="mt-3 text-2xl font-black">$18,420</div>
-      <div className="mt-1 text-xs text-slate-300">Saved by our users</div>
-    </div>
-  );
-}
-
-function SuccessRateCard() {
-  return (
-    <div className="absolute -right-10 bottom-7 z-10 hidden w-36 rounded-xl border border-cyan-300/70 bg-[#071326]/90 p-5 shadow-[0_0_38px_rgba(34,211,238,0.22)] backdrop-blur-xl xl:block">
-      <TrendingUp className="mb-4 h-10 w-10 text-emerald-300" />
-      <div className="text-base">Cancellation<br />Success Rate</div>
-      <div className="mt-2 text-4xl font-black text-emerald-300">92%</div>
-      <div className="mt-1 text-sm text-slate-300">Last 90 days</div>
     </div>
   );
 }
