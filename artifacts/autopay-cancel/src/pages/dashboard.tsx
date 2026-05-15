@@ -192,7 +192,7 @@ export default function Dashboard() {
                 </div>
                 <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-primary" />
               </Link>
-              <Link href="/dashboard/disputes" className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-primary/50 hover:bg-primary/5 transition-all">
+              <Link href="/disputes" className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-primary/50 hover:bg-primary/5 transition-all">
                 <div className="flex items-center gap-3">
                   <Landmark className="h-5 w-5 text-blue-600" />
                   <div>
@@ -202,7 +202,7 @@ export default function Dashboard() {
                 </div>
                 <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-primary" />
               </Link>
-              <Link href="/dashboard/continued-charge-detector" className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-primary/50 hover:bg-primary/5 transition-all">
+              <Link href="/continued-charges" className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-primary/50 hover:bg-primary/5 transition-all">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-5 w-5 text-amber-600" />
                   <div>

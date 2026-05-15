@@ -213,10 +213,10 @@ export default function CancellationDeliveryPanel({
             If charges continue after cancellation, move to an escalation workflow.
           </p>
           <div className="grid gap-2 text-sm sm:grid-cols-2">
-            <Link href="/dashboard/disputes" className="rounded-lg border border-red-200 bg-white px-3 py-2 font-medium text-red-800 hover:bg-red-50">
+            <Link href="/disputes" className="rounded-lg border border-red-200 bg-white px-3 py-2 font-medium text-red-800 hover:bg-red-50">
               Generate bank stop-payment request
             </Link>
-            <Link href="/dashboard/continued-charge-detector" className="rounded-lg border border-red-200 bg-white px-3 py-2 font-medium text-red-800 hover:bg-red-50">
+            <Link href="/continued-charges" className="rounded-lg border border-red-200 bg-white px-3 py-2 font-medium text-red-800 hover:bg-red-50">
               Build continued-charge evidence packet
             </Link>
           </div>

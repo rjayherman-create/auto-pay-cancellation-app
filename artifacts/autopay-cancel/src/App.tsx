@@ -17,6 +17,7 @@ const Subscriptions = lazy(() => import("@/pages/subscriptions"));
 const SubscriptionDetail = lazy(() => import("@/pages/subscription-detail"));
 const Accounts = lazy(() => import("@/pages/accounts"));
 const Documents = lazy(() => import("@/pages/documents"));
+const EvidenceVault = lazy(() => import("@/pages/evidence-vault"));
 const Settings = lazy(() => import("@/pages/settings"));
 const DisputesPage = lazy(() => import("@/pages/disputes"));
 const ContinuedChargeDetector = lazy(() => import("@/pages/continued-charge-detector"));
@@ -110,9 +111,12 @@ function Router() {
         <Route path="/subscriptions/:id" component={SubscriptionDetail} />
         <Route path="/accounts" component={Accounts} />
         <Route path="/documents" component={Documents} />
+        <Route path="/evidence-vault" component={EvidenceVault} />
         <Route path="/settings" component={Settings} />
-        <Route path="/dashboard/disputes" component={DisputesPage} />
-        <Route path="/dashboard/continued-charge-detector" component={ContinuedChargeDetector} />
+        <Route path="/disputes" component={DisputesPage} />
+        <Route path="/continued-charges" component={ContinuedChargeDetector} />
+        <Route path="/dashboard/disputes"><ReplaceRedirect to="/disputes" /></Route>
+        <Route path="/dashboard/continued-charge-detector"><ReplaceRedirect to="/continued-charges" /></Route>
         <Route component={NotFound} />
       </Switch>
     </Suspense>
