@@ -59,7 +59,7 @@ export default function SignInPage() {
         <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-4">
           <div className="text-xl font-bold text-slate-900">Auto-Pay Cancel</div>
           <p className="text-sm text-slate-500">
-            Authentication is unavailable. Set VITE_CLERK_PUBLISHABLE_KEY, then redeploy to enable sign-in.
+            Authentication is unavailable. Please contact your administrator to configure Clerk (VITE_CLERK_PUBLISHABLE_KEY).
           </p>
         </div>
       </div>
