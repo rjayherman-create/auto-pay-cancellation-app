@@ -46,7 +46,7 @@ function getClerkFrontendApiHost(): string | null {
 }
 
 const clerkFrontendApiHost = getClerkFrontendApiHost();
-const clerkScriptAndFrameSources = clerkFrontendApiHost
+const clerkFrontendApiSources = clerkFrontendApiHost
   ? [clerkFrontendApiHost]
   : [];
 
@@ -65,7 +65,7 @@ app.use(
           "'unsafe-eval'",
           "js.stripe.com",
           "cdn.plaid.com",
-          ...clerkScriptAndFrameSources,
+          ...clerkFrontendApiSources,
         ],
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
@@ -76,7 +76,7 @@ app.use(
           "js.stripe.com",
           "hooks.stripe.com",
           "cdn.plaid.com",
-          ...clerkScriptAndFrameSources,
+          ...clerkFrontendApiSources,
         ],
         connectSrc: [
           "'self'",
