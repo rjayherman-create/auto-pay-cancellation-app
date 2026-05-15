@@ -11,6 +11,7 @@ import adminRouter from "./admin.js";
 import disputesRouter from "./disputes.js";
 import continuedChargesRouter from "./continuedCharges.js";
 import merchantDirectoryRouter from "./merchantDirectory.js";
+import workflowAnalyticsRouter from "./workflowAnalytics.js";
 import { authLimiter } from "../middlewares/rateLimiter.js";
 
 const router: IRouter = Router();
@@ -27,5 +28,6 @@ router.use("/admin", adminRouter);
 router.use("/disputes", disputesRouter);
 router.use("/continued-charges", continuedChargesRouter);
 router.use("/merchant-directory", merchantDirectoryRouter);
+router.use("/workflow-analytics", workflowAnalyticsRouter);
 
 export default router;

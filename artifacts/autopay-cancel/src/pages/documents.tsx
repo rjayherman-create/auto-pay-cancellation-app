@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Layout } from "@/components/layout";
 import { useGetRecurringPayments, useGenerateEmailTemplate, useGenerateAchRevocation, useGenerateStopPayment } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,10 +9,12 @@ import { Loader2, Copy, FileText, Check } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 import CancellationDeliveryPanel from "@/components/CancellationDeliveryPanel";
+import WorkflowTracker from "@/lib/workflowTracker";
 
 export default function Documents() {
   const { user } = useAuth();
   const [location] = useLocation();
+  const tracker = useRef<WorkflowTracker | null>(null);
   const searchParams = new URLSearchParams(window.location.search);
   const initialPaymentId = searchParams.get('paymentId');
   const initialType = searchParams.get('type') || 'email';
@@ -32,8 +34,38 @@ export default function Documents() {
 
   const isPending = generateEmail.isPending || generateAch.isPending || generateStop.isPending;
 
+  useEffect(() => {
+    tracker.current = new WorkflowTracker("document_generation");
+    tracker.current.startStep(paymentId ? "document_type" : "merchant_selection", {
+      initialPaymentId: paymentId || null,
+      initialType,
+    });
+
+    return () => {
+      tracker.current?.workflowAbandoned({
+        hasGeneratedText: Boolean(generatedText),
+      });
+    };
+  }, []);
+
+  const handlePaymentChange = (value: string) => {
+    tracker.current?.completeStep("merchant_selection", { paymentId: value });
+    tracker.current?.startStep("document_type", { paymentId: value });
+    setPaymentId(value);
+  };
+
+  const handleDocTypeChange = (value: string) => {
+    tracker.current?.completeStep("document_type", { docType: value });
+    tracker.current?.startStep("letter_generation", { docType: value });
+    setDocType(value);
+  };
+
   const handleGenerate = async () => {
     if (!paymentId) return;
+    tracker.current?.startStep("letter_generation", {
+      paymentId,
+      docType,
+    });
     setGeneratedText("");
     setInstructions([]);
     setCopied(false);
@@ -58,13 +90,36 @@ export default function Documents() {
         setGeneratedText(res.content);
         setInstructions(res.instructions);
       }
+      tracker.current?.completeStep("letter_generation", {
+        paymentId,
+        docType,
+      });
+      tracker.current?.startStep("delivery_guidance", {
+        paymentId,
+        docType,
+      });
     } catch (e) {
       console.error(e);
+      tracker.current?.track("step_completed", "letter_generation", {
+        paymentId,
+        docType,
+        error: true,
+      });
     }
   };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedText);
+    tracker.current?.completeStep("delivery_guidance", {
+      action: "copy_to_clipboard",
+      paymentId,
+      docType,
+    });
+    tracker.current?.workflowCompleted({
+      paymentId,
+      docType,
+      action: "copy_to_clipboard",
+    });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -86,7 +141,7 @@ export default function Documents() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Subscription</label>
-                <Select value={paymentId} onValueChange={setPaymentId}>
+                <Select value={paymentId} onValueChange={handlePaymentChange}>
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Choose one..." />
                   </SelectTrigger>
@@ -100,7 +155,7 @@ export default function Documents() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Document Type</label>
-                <Tabs value={docType} onValueChange={setDocType} className="w-full">
+                <Tabs value={docType} onValueChange={handleDocTypeChange} className="w-full">
                   <TabsList className="grid w-full grid-cols-1 h-auto gap-1 bg-transparent">
                     <TabsTrigger value="email" className="data-[state=active]:bg-primary data-[state=active]:text-white border border-slate-200">Email Template</TabsTrigger>
                     <TabsTrigger value="ach" className="data-[state=active]:bg-primary data-[state=active]:text-white border border-slate-200">ACH Revocation</TabsTrigger>
@@ -109,7 +164,12 @@ export default function Documents() {
                 </Tabs>
               </div>
 
-              <Button onClick={handleGenerate} disabled={!paymentId || isPending} className="w-full h-12 shadow-md shadow-primary/20">
+              <Button
+                onClick={handleGenerate}
+                onDoubleClick={() => tracker.current?.registerRageClick({ target: "generate_document" })}
+                disabled={!paymentId || isPending}
+                className="w-full h-12 shadow-md shadow-primary/20"
+              >
                 {isPending ? <Loader2 className="animate-spin h-5 w-5 mr-2" /> : <FileText className="h-5 w-5 mr-2" />}
                 Generate Document
               </Button>

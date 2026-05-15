@@ -249,6 +249,28 @@ export async function initDb(): Promise<void> {
         'Keep certified mail receipt and screenshots of all secure messages.'
       )
       ON CONFLICT DO NOTHING;
+
+      CREATE TABLE IF NOT EXISTS workflow_analytics (
+        id             SERIAL PRIMARY KEY,
+        user_id        INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        workflow_id    TEXT NOT NULL,
+        workflow_type  TEXT NOT NULL,
+        event          TEXT NOT NULL,
+        step           TEXT,
+        timestamp_ms   BIGINT NOT NULL,
+        metadata       JSONB,
+        user_agent     TEXT,
+        created_at     TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      ALTER TABLE workflow_analytics
+        ALTER COLUMN timestamp_ms TYPE BIGINT;
+
+      CREATE INDEX IF NOT EXISTS workflow_analytics_workflow_idx
+        ON workflow_analytics (workflow_id);
+
+      CREATE INDEX IF NOT EXISTS workflow_analytics_event_idx
+        ON workflow_analytics (event);
     `);
     console.log("[DB] Schema ready.");
   } catch (err: any) {
