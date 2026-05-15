@@ -7,7 +7,7 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setApiTokenProvider } from "@workspace/api-client-react";
 import { StartingUpController } from "@/lib/use-starting-up";
-import { basePath, clerkPubKey, isClerkEnabled, isDevBypassEnabled } from "@/lib/auth-mode";
+import { basePath, clerkProxyUrl, clerkPubKey, isClerkEnabled, isDevBypassEnabled } from "@/lib/auth-mode";
 
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -21,8 +21,6 @@ import Settings from "@/pages/settings";
 import DisputesPage from "@/pages/disputes";
 import ContinuedChargeDetector from "@/pages/continued-charge-detector";
 import NotFound from "@/pages/not-found";
-
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)

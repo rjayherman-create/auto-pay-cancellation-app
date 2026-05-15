@@ -3,7 +3,7 @@ name: Deploy to Railway
 on:
   push:
     branches:
-      - '**'
+      - Main
   workflow_dispatch:
 
 permissions:
@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy to Railway
         run: |
-          args=(--ci --yes)
+          args=(--ci)
 
           if [ -n "$RAILWAY_SERVICE" ]; then
             args+=(--service "$RAILWAY_SERVICE")

@@ -9,6 +9,7 @@ import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxy
 import router from "./routes/index.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
+import { getClerkPublishableKey, hasClerkRuntimeConfig, isDevBypassAllowed } from "./authConfig.js";
 
 const app: Express = express();
 const isProd = process.env.NODE_ENV === "production";
@@ -19,8 +20,7 @@ function getClerkFrontendApiHost(): string | null {
     /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
 
   const key =
-    process.env.CLERK_PUBLISHABLE_KEY ||
-    process.env.VITE_CLERK_PUBLISHABLE_KEY;
+    getClerkPublishableKey();
 
   if (!key) return null;
 
@@ -209,18 +209,11 @@ app.set("trust proxy", 1);
 //      In this case unauthenticated routes work freely; protected routes still
 //      require either the dev_session cookie or a real Clerk token.
 const _clerkMw = clerkMiddleware();
-const _hasClerkPublishableKey =
-  !!(process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY);
-const _hasClerkSecretKey = !!process.env.CLERK_SECRET_KEY;
-const _bypassAllowed =
-  process.env.NODE_ENV === "development" ||
-  process.env.ENABLE_DEV_BYPASS === "true" ||
-  !(_hasClerkPublishableKey && _hasClerkSecretKey);
 app.use((req, res, next) => {
-  if (_bypassAllowed && (req.cookies as Record<string, string>)?.dev_session === "1") {
+  if (isDevBypassAllowed() && (req.cookies as Record<string, string>)?.dev_session === "1") {
     return next();
   }
-  if (!_hasClerkPublishableKey) {
+  if (!hasClerkRuntimeConfig()) {
     return next();
   }
   return _clerkMw(req, res, next);
