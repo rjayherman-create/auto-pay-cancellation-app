@@ -76,5 +76,6 @@ function useAuthBypass() {
 }
 
 // Statically pick the right hook so the same function is always exported,
-// satisfying React's rules of hooks.
+// satisfying React's rules of hooks. When Clerk is unavailable, fall back to the
+// cookie-backed path so the app redirects cleanly instead of crashing on Clerk hooks.
 export const useAuth = isClerkEnabled ? useAuthClerk : useAuthBypass;
