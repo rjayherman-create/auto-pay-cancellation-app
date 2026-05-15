@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 import { clerkMiddleware } from "@clerk/express";
@@ -134,6 +135,7 @@ app.use(
 );
 
 // ─── Security: Global Rate Limiter ────────────────────────────────────────────
+app.use(compression());
 app.use(globalLimiter);
 
 // ─── Security: Stripe Webhook (raw body BEFORE json parser) ──────────────────
