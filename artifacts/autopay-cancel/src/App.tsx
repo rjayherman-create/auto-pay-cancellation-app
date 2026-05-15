@@ -118,7 +118,7 @@ function ClerkUnavailableFallback() {
     setErr(null);
     try {
       const res = await fetch(`${basePath}/api/auth/dev-login`, { method: "POST", credentials: "include" });
-      if (!res.ok) throw new Error("Login failed — make sure ENABLE_DEV_BYPASS=true is set");
+      if (!res.ok) throw new Error("Login failed — make sure bypass is enabled on the server");
       window.location.href = `${basePath}/dashboard`;
     } catch (e: any) {
       setErr(e.message);

@@ -14,7 +14,7 @@ export default function SignInPage() {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Dev login failed — ensure ENABLE_DEV_BYPASS=true is set on the server");
+      if (!res.ok) throw new Error("Dev login failed — ensure bypass is enabled on the server");
       // Full reload: clears React Query cache so /api/auth/me refetches with the new cookie
       window.location.href = `${basePath}/dashboard`;
     } catch (e: any) {

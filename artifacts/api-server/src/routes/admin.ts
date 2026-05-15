@@ -5,8 +5,16 @@ import { requireAuth, type AuthenticatedRequest } from "../middlewares/auth.js";
 
 const router: IRouter = Router();
 
+const HAS_CLERK_PUBLISHABLE_KEY = () =>
+  !!(
+    process.env.CLERK_PUBLISHABLE_KEY?.trim() ||
+    process.env.VITE_CLERK_PUBLISHABLE_KEY?.trim()
+  );
+const HAS_CLERK_SECRET_KEY = () => !!process.env.CLERK_SECRET_KEY?.trim();
 const BYPASS_ALLOWED = () =>
-  process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_BYPASS === "true";
+  process.env.NODE_ENV === "development" ||
+  process.env.ENABLE_DEV_BYPASS === "true" ||
+  !(HAS_CLERK_PUBLISHABLE_KEY() && HAS_CLERK_SECRET_KEY());
 
 // Helper: get or create a demo bank account for the user
 async function getOrCreateDemoAccount(userId: number) {

@@ -6,8 +6,16 @@ import { eq } from "drizzle-orm";
 const router: IRouter = Router();
 
 const DEV_CLERK_USER_ID = "dev_bypass_user";
+const HAS_CLERK_PUBLISHABLE_KEY = () =>
+  !!(
+    process.env.CLERK_PUBLISHABLE_KEY?.trim() ||
+    process.env.VITE_CLERK_PUBLISHABLE_KEY?.trim()
+  );
+const HAS_CLERK_SECRET_KEY = () => !!process.env.CLERK_SECRET_KEY?.trim();
 const BYPASS_ALLOWED = () =>
-  process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_BYPASS === "true";
+  process.env.NODE_ENV === "development" ||
+  process.env.ENABLE_DEV_BYPASS === "true" ||
+  !(HAS_CLERK_PUBLISHABLE_KEY() && HAS_CLERK_SECRET_KEY());
 
 function getEffectiveClerkUserId(req: any): string | null {
   if (BYPASS_ALLOWED() && req.cookies?.dev_session === "1") {
