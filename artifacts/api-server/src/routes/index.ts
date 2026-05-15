@@ -10,6 +10,7 @@ import plaidRouter from "./plaid.js";
 import adminRouter from "./admin.js";
 import disputesRouter from "./disputes.js";
 import continuedChargesRouter from "./continuedCharges.js";
+import merchantDirectoryRouter from "./merchantDirectory.js";
 import { authLimiter } from "../middlewares/rateLimiter.js";
 
 const router: IRouter = Router();
@@ -25,5 +26,6 @@ router.use("/plaid", plaidRouter);
 router.use("/admin", adminRouter);
 router.use("/disputes", disputesRouter);
 router.use("/continued-charges", continuedChargesRouter);
+router.use("/merchant-directory", merchantDirectoryRouter);
 
 export default router;

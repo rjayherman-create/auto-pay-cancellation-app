@@ -196,6 +196,59 @@ export async function initDb(): Promise<void> {
         dispute_packet     TEXT,
         created_at         TIMESTAMP NOT NULL DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS merchant_directory (
+        id                    SERIAL PRIMARY KEY,
+        merchant_name         TEXT NOT NULL,
+        category              TEXT,
+        cancellation_email    TEXT,
+        cancellation_address  TEXT,
+        cancellation_phone    TEXT,
+        cancellation_url      TEXT,
+        secure_message_steps  TEXT,
+        accepts_email         BOOLEAN NOT NULL DEFAULT FALSE,
+        accepts_mail          BOOLEAN NOT NULL DEFAULT TRUE,
+        accepts_portal        BOOLEAN NOT NULL DEFAULT FALSE,
+        accepts_hand_delivery BOOLEAN NOT NULL DEFAULT FALSE,
+        recommended_method    TEXT NOT NULL DEFAULT 'certified_mail',
+        proof_tips            TEXT,
+        created_at            TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+
+      CREATE UNIQUE INDEX IF NOT EXISTS merchant_directory_name_idx
+        ON merchant_directory (LOWER(merchant_name));
+
+      INSERT INTO merchant_directory (
+        merchant_name,
+        category,
+        cancellation_email,
+        cancellation_address,
+        cancellation_phone,
+        cancellation_url,
+        accepts_email,
+        accepts_mail,
+        accepts_portal,
+        accepts_hand_delivery,
+        recommended_method,
+        secure_message_steps,
+        proof_tips
+      )
+      VALUES (
+        'Bank of America',
+        'Bank',
+        'customerservice@bankofamerica.com',
+        'Bank of America ACH Stop Payment Department, PO Box 25118, Tampa, FL 33622',
+        '800-432-1000',
+        'https://www.bankofamerica.com',
+        TRUE,
+        TRUE,
+        TRUE,
+        TRUE,
+        'secure_portal_and_certified_mail',
+        'Log into Online Banking > Message Center > New Message > Billing/ACH Dispute',
+        'Keep certified mail receipt and screenshots of all secure messages.'
+      )
+      ON CONFLICT DO NOTHING;
     `);
     console.log("[DB] Schema ready.");
   } catch (err: any) {

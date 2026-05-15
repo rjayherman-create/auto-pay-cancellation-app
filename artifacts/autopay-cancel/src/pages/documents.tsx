@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Copy, FileText, Check } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
+import CancellationDeliveryPanel from "@/components/CancellationDeliveryPanel";
 
 export default function Documents() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function Documents() {
   const [copied, setCopied] = useState(false);
 
   const { data: payments } = useGetRecurringPayments();
+  const selectedPayment = payments?.find((payment) => payment.id.toString() === paymentId);
   
   const generateEmail = useGenerateEmailTemplate();
   const generateAch = useGenerateAchRevocation();
@@ -115,7 +117,7 @@ export default function Documents() {
           </Card>
         </div>
 
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 space-y-6">
           <Card className="shadow-sm border-border/50 rounded-2xl h-full min-h-[500px] flex flex-col overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between py-4">
                <div>
@@ -151,9 +153,12 @@ export default function Documents() {
                      </pre>
                    </div>
                  </div>
-               )}
+              )}
             </CardContent>
           </Card>
+          {generatedText && selectedPayment && (
+            <CancellationDeliveryPanel merchantName={selectedPayment.merchantName} />
+          )}
         </div>
       </div>
     </Layout>
