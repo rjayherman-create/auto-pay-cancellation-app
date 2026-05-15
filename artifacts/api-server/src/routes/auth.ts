@@ -2,23 +2,14 @@ import { Router, type IRouter } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { getPublicAuthConfig, isDevBypassAllowed } from "../authConfig.js";
 
 const router: IRouter = Router();
 
 const DEV_CLERK_USER_ID = "dev_bypass_user";
-const HAS_CLERK_PUBLISHABLE_KEY = () =>
-  !!(
-    process.env.CLERK_PUBLISHABLE_KEY?.trim() ||
-    process.env.VITE_CLERK_PUBLISHABLE_KEY?.trim()
-  );
-const HAS_CLERK_SECRET_KEY = () => !!process.env.CLERK_SECRET_KEY?.trim();
-const BYPASS_ALLOWED = () =>
-  process.env.NODE_ENV === "development" ||
-  process.env.ENABLE_DEV_BYPASS === "true" ||
-  !(HAS_CLERK_PUBLISHABLE_KEY() && HAS_CLERK_SECRET_KEY());
 
 function getEffectiveClerkUserId(req: any): string | null {
-  if (BYPASS_ALLOWED() && req.cookies?.dev_session === "1") {
+  if (isDevBypassAllowed() && req.cookies?.dev_session === "1") {
     return DEV_CLERK_USER_ID;
   }
   try {
@@ -29,6 +20,10 @@ function getEffectiveClerkUserId(req: any): string | null {
     return null;
   }
 }
+
+router.get("/config", (_req, res) => {
+  res.json(getPublicAuthConfig());
+});
 
 // GET /api/auth/me — returns our internal profile, creating it on first access
 router.get("/me", async (req, res) => {
@@ -105,7 +100,7 @@ router.post("/logout", (_req, res) => {
 
 // POST /api/auth/dev-login — Sets a cookie that bypasses Clerk auth.
 router.post("/dev-login", (req, res) => {
-  if (!BYPASS_ALLOWED()) {
+  if (!isDevBypassAllowed()) {
     res.status(403).json({ error: "forbidden", message: "Dev bypass is disabled" });
     return;
   }
