@@ -31,8 +31,6 @@ app.use(
           "*.clerk.com",
           "*.clerk.accounts.dev",
           "*.clerkstage.com",
-          "clerk.*.replit.dev",
-          "clerk.*.repl.co",
         ],
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
@@ -46,8 +44,6 @@ app.use(
           "*.clerk.com",
           "*.clerk.accounts.dev",
           "*.clerkstage.com",
-          "clerk.*.replit.dev",
-          "clerk.*.repl.co",
         ],
         connectSrc: [
           "'self'",
