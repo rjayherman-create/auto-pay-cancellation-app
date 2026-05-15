@@ -14,13 +14,19 @@ const app: Express = express();
 const isProd = process.env.NODE_ENV === "production";
 
 function getClerkFrontendApiHost(): string | null {
+  const validHostnamePattern =
+    /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
   const key =
     process.env.CLERK_PUBLISHABLE_KEY ||
     process.env.VITE_CLERK_PUBLISHABLE_KEY;
 
   if (!key) return null;
 
-  const encoded = key.split("_")[2];
+  const keyParts = key.split("_");
+  if (keyParts.length < 3) return null;
+
+  const encoded = keyParts[2];
   if (!encoded) return null;
 
   try {
@@ -30,7 +36,7 @@ function getClerkFrontendApiHost(): string | null {
       .trim()
       .toLowerCase();
 
-    if (!decoded || !/^[a-z0-9.-]+$/.test(decoded)) return null;
+    if (!decoded || !validHostnamePattern.test(decoded)) return null;
     return decoded;
   } catch {
     return null;
