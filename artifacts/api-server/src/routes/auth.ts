@@ -14,8 +14,13 @@ function getEffectiveClerkUserId(req: any): string | null {
   if (bypassAllowed && req.cookies?.dev_session === "1") {
     return DEV_CLERK_USER_ID;
   }
-  const { userId } = getAuth(req);
-  return userId ?? null;
+  try {
+    const { userId } = getAuth(req);
+    return userId ?? null;
+  } catch {
+    // Clerk middleware not configured — treat as unauthenticated
+    return null;
+  }
 }
 
 // GET /api/auth/me — returns our internal profile, creating it on first access

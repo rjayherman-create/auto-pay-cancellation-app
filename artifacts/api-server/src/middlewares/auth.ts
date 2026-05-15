@@ -55,7 +55,12 @@ export async function requireAuth(
     }
   }
 
-  const { userId: clerkUserId } = getAuth(req);
+  let clerkUserId: string | null = null;
+  try {
+    clerkUserId = getAuth(req).userId ?? null;
+  } catch {
+    // Clerk middleware not configured — treat as unauthenticated
+  }
 
   if (!clerkUserId) {
     res.status(401).json({ error: "unauthorized", message: "Authentication required" });
