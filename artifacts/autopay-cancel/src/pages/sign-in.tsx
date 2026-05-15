@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { SignIn } from "@clerk/react";
-
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const bypassMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
+import { basePath, isClerkEnabled, isDevBypassEnabled } from "@/lib/auth-mode";
 
 export default function SignInPage() {
-  const [loading, setLoading] = useState(bypassMode);
+  const [loading, setLoading] = useState(isDevBypassEnabled);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDevLogin() {
@@ -27,11 +25,11 @@ export default function SignInPage() {
 
   // Auto-login immediately when bypass mode is active
   useEffect(() => {
-    if (bypassMode) handleDevLogin();
+    if (isDevBypassEnabled) handleDevLogin();
   }, []);
 
   // Bypass mode: show a minimal loading screen (auto-login is in progress)
-  if (bypassMode) {
+  if (isDevBypassEnabled) {
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 px-4 gap-4">
         <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-4">
@@ -50,6 +48,19 @@ export default function SignInPage() {
               </button>
             </>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!isClerkEnabled) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-4">
+          <div className="text-xl font-bold text-slate-900">Auto-Pay Cancel</div>
+          <p className="text-sm text-slate-500">
+            Sign in is unavailable right now. Please contact your administrator to configure authentication.
+          </p>
         </div>
       </div>
     );
