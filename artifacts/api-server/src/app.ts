@@ -117,10 +117,9 @@ app.set("trust proxy", 1);
 //      In this case unauthenticated routes work freely; protected routes still
 //      require either the dev_session cookie or a real Clerk token.
 const _clerkMw = clerkMiddleware();
-const _hasClerkPublishableKey = !!(
+const _hasClerkPublishableKey =
   process.env.CLERK_PUBLISHABLE_KEY ||
-  process.env.VITE_CLERK_PUBLISHABLE_KEY
-);
+  process.env.VITE_CLERK_PUBLISHABLE_KEY;
 app.use((req, res, next) => {
   const bypassAllowed =
     process.env.NODE_ENV === "development" ||
