@@ -128,24 +128,27 @@ export default function ContinuedChargeDetector() {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight text-zinc-900">Continued Charge Detection</h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
+          Next step: upload statement
+        </p>
+        <h1 className="page-title gradient-text">Continued Charge Detection</h1>
+        <p className="mt-3 text-slate-300">
           Identify recurring charges that continued after cancellation.
         </p>
       </div>
 
       {message && (
-        <div className="mb-6 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
           <AlertTriangle className="h-4 w-4" />
           <span>{message}</span>
         </div>
       )}
 
-      <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm">
+      <Card className="app-card">
         <CardContent className="space-y-8 p-8">
           <section>
-            <h2 className="mb-2 text-xl font-bold text-zinc-900">Step 1 - Upload Statement</h2>
-            <p className="mb-5 text-sm text-zinc-500">
+            <h2 className="mb-2 text-xl font-bold text-white">Step 1 - Upload Statement</h2>
+            <p className="mb-5 text-sm text-slate-400">
               Add the merchant, cancellation date, and statement evidence so the detector can compare charge dates.
             </p>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -170,18 +173,18 @@ export default function ContinuedChargeDetector() {
               </div>
             </div>
 
-              <div className="mt-5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-5">
+              <div className="mt-5 rounded-xl border border-dashed border-cyan-300/25 bg-white/5 p-5">
                 <Input
                   type="file"
                   multiple
                   accept="image/*,.pdf"
                   onChange={(event) => setFiles(Array.from(event.target.files || []))}
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-400">
                   OCR extraction is prepared as a backend hook; this version stores file metadata and runs statement-pattern detection.
                 </p>
                 {files.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                  <ul className="mt-2 space-y-1 text-xs text-slate-300">
                     {files.map((file) => (
                       <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>
                     ))}
@@ -192,7 +195,7 @@ export default function ContinuedChargeDetector() {
               <Button
                 onClick={analyzeCharges}
                 disabled={isAnalyzing || !merchantName.trim()}
-                className="mt-5 bg-black text-white hover:bg-zinc-800"
+                className="btn-primary mt-5"
               >
                 <FileSearch className="mr-2 h-4 w-4" />
                 {isAnalyzing ? "Analyzing..." : "Analyze Charges"}
@@ -200,28 +203,28 @@ export default function ContinuedChargeDetector() {
           </section>
 
           <section>
-            <h2 className="mb-2 text-xl font-bold text-zinc-900">Step 2 - Review Charges</h2>
-            <p className="mb-5 text-sm text-zinc-500">
+            <h2 className="mb-2 text-xl font-bold text-white">Step 2 - Review Charges</h2>
+            <p className="mb-5 text-sm text-slate-400">
               AI-assisted recurring charge analysis will appear here.
             </p>
             <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-xl bg-zinc-50 p-5">
-                <h3 className="mb-3 font-semibold text-zinc-900">Detected Continued Charges</h3>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <h3 className="mb-3 font-semibold text-white">Detected Continued Charges</h3>
               {!analysis ? (
-                <div className="rounded-xl border border-dashed border-zinc-300 p-10 text-center text-zinc-500">
+                <div className="rounded-xl border border-dashed border-white/10 p-10 text-center text-slate-400">
                   No analysis yet.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {analysis.continuedCharges.map((charge, index) => (
-                    <div key={`${charge.date}-${index}`} className="rounded-xl border border-slate-200 bg-white p-4">
+                    <div key={`${charge.date}-${index}`} className="rounded-xl border border-white/10 bg-white/5 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <div className="font-medium text-slate-900">{charge.merchant}</div>
-                          <div className="text-xs text-slate-500">{charge.date}</div>
-                          {charge.source && <div className="text-xs text-slate-500">Source: {charge.source}</div>}
+                          <div className="font-medium text-white">{charge.merchant}</div>
+                          <div className="text-xs text-slate-400">{charge.date}</div>
+                          {charge.source && <div className="text-xs text-slate-400">Source: {charge.source}</div>}
                         </div>
-                        <div className="text-lg font-bold text-slate-900">{charge.amount}</div>
+                        <div className="text-lg font-bold text-white">{charge.amount}</div>
                       </div>
                     </div>
                   ))}
@@ -229,19 +232,19 @@ export default function ContinuedChargeDetector() {
               )}
               </div>
 
-              <div className="rounded-xl bg-zinc-50 p-5">
-                <h3 className="mb-3 font-semibold text-zinc-900">Timeline</h3>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+                <h3 className="mb-3 font-semibold text-white">Timeline</h3>
               {!analysis ? (
-                <p className="text-sm text-zinc-500">Timeline will appear after analysis.</p>
+                <p className="text-sm text-slate-400">Timeline will appear after analysis.</p>
               ) : (
                 <div className="space-y-4">
                   {analysis.timeline.map((item, index) => (
                     <div key={`${item.date}-${index}`} className="flex gap-4">
-                      <div className="mt-2 h-3 w-3 rounded-full bg-slate-900" />
+                      <div className="mt-2 h-3 w-3 rounded-full bg-cyan-300" />
                       <div>
-                        <div className="font-medium text-slate-900">{item.type}</div>
-                        <div className="text-sm text-slate-500">{item.date}</div>
-                        {item.amount && <div className="text-sm font-medium text-slate-700">{item.amount}</div>}
+                        <div className="font-medium text-white">{item.type}</div>
+                        <div className="text-sm text-slate-400">{item.date}</div>
+                        {item.amount && <div className="text-sm font-medium text-slate-300">{item.amount}</div>}
                       </div>
                     </div>
                   ))}
@@ -250,17 +253,17 @@ export default function ContinuedChargeDetector() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-xl bg-zinc-50 p-5">
-              <h3 className="mb-3 font-semibold text-zinc-900">Evidence Summary</h3>
-              <pre className="min-h-[180px] whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+            <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-5">
+              <h3 className="mb-3 font-semibold text-white">Evidence Summary</h3>
+              <pre className="min-h-[180px] whitespace-pre-wrap rounded-xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">
                 {analysis?.evidenceSummary || "Evidence summary will appear here."}
               </pre>
             </div>
           </section>
 
           <section>
-            <h2 className="mb-2 text-xl font-bold text-zinc-900">Step 3 - Generate Dispute Packet</h2>
-            <p className="mb-5 text-sm text-zinc-500">
+            <h2 className="mb-2 text-xl font-bold text-white">Step 3 - Generate Dispute Packet</h2>
+            <p className="mb-5 text-sm text-slate-400">
               Create a packet source document you can copy or export for bank and merchant follow-up.
             </p>
             <Textarea
@@ -270,7 +273,7 @@ export default function ContinuedChargeDetector() {
               className="min-h-[240px] font-mono text-xs"
             />
             <div className="mt-4 flex flex-wrap gap-3">
-              <Button className="bg-red-600 text-white hover:bg-red-700" onClick={exportPacketPdf} disabled={!disputePacket}>
+              <Button className="bg-red-500 text-white hover:bg-red-400" onClick={exportPacketPdf} disabled={!disputePacket}>
                 <Download className="mr-2 h-4 w-4" />Generate Dispute Documents
               </Button>
               <Button variant="outline" onClick={copyPacket} disabled={!disputePacket}>
@@ -279,7 +282,7 @@ export default function ContinuedChargeDetector() {
             </div>
           </section>
 
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-slate-400">
             Legal Disclaimer: This tool assists users in organizing financial records and generating self-help dispute documents. We are not a law firm, bank, or financial advisor.
           </p>
         </CardContent>

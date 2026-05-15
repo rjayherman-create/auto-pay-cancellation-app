@@ -62,36 +62,48 @@
 }
 
 :root {
+  --app-bg: #030712;
+  --app-bg-2: #071226;
+  --app-card: rgba(11, 18, 32, 0.78);
+  --app-border: rgba(255, 255, 255, 0.08);
+  --app-text: #ffffff;
+  --app-muted: #94a3b8;
+  --app-primary: #22d3ee;
+  --app-primary-2: #06b6d4;
+  --app-danger: #ef4444;
+  --app-success: #10b981;
+  --app-glow: 0 0 25px rgba(34, 211, 238, 0.18);
+
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 210 33% 98%;
-  --foreground: 222 47% 11%;
+  --background: 222 84% 5%;
+  --foreground: 210 40% 98%;
   
-  --border: 214 32% 91%;
+  --border: 215 28% 17%;
   
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --card-border: 214 32% 91%;
+  --card: 222 48% 9%;
+  --card-foreground: 210 40% 98%;
+  --card-border: 215 28% 17%;
   
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 222 47% 11%;
-  --sidebar-border: 214 32% 91%;
-  --sidebar-primary: 221 83% 53%;
-  --sidebar-primary-foreground: 210 40% 98%;
-  --sidebar-accent: 210 40% 96%;
-  --sidebar-accent-foreground: 222 47% 11%;
-  --sidebar-ring: 221 83% 53%;
+  --sidebar: 222 84% 5%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-border: 215 28% 17%;
+  --sidebar-primary: 188 86% 53%;
+  --sidebar-primary-foreground: 222 47% 11%;
+  --sidebar-accent: 220 45% 12%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-ring: 188 86% 53%;
   
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
   --popover-border: 214 32% 91%;
   
-  --primary: 221 83% 53%;
-  --primary-foreground: 210 40% 98%;
+  --primary: 188 86% 53%;
+  --primary-foreground: 222 47% 11%;
   
   --secondary: 210 40% 96%;
   --secondary-foreground: 222 47% 11%;
@@ -106,9 +118,9 @@
   --destructive-foreground: 210 40% 98%;
   
   --input: 214 32% 91%;
-  --ring: 221 83% 53%;
+  --ring: 188 86% 53%;
   
-  --radius: 0.75rem;
+  --radius: 1.5rem;
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
@@ -160,11 +172,89 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(34, 211, 238, 0.12), transparent 30%),
+      radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.10), transparent 30%),
+      linear-gradient(135deg, #020617 0%, #071226 45%, #020617 100%);
   }
   
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     @apply tracking-tight font-bold text-foreground;
+  }
+}
+
+@layer components {
+  .app-card {
+    background: var(--app-card);
+    border: 1px solid var(--app-border);
+    border-radius: 28px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(18px);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+
+  .app-card:hover {
+    border-color: rgba(34, 211, 238, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(34, 211, 238, 0.12),
+      0 0 30px rgba(34, 211, 238, 0.12);
+  }
+
+  .btn-primary {
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--app-primary), var(--app-primary-2));
+    color: white;
+    font-weight: 700;
+    box-shadow: var(--app-glow);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 35px rgba(34, 211, 238, 0.35);
+  }
+
+  .btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
+    color: white;
+  }
+
+  .page-title {
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #ffffff, var(--app-primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .badge-alert {
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .badge-success {
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
   }
 }
 

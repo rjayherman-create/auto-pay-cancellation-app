@@ -28,14 +28,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full bg-slate-50">
+      <div className="flex h-screen w-full bg-transparent text-white">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex h-16 shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-6">
+          <header className="flex h-16 shrink-0 items-center gap-4 border-b border-white/10 bg-slate-950/70 px-6 backdrop-blur-xl">
             <SidebarTrigger />
             <div className="flex-1" />
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-slate-700 hidden sm:inline-block">
+              <span className="text-sm font-medium text-slate-300 hidden sm:inline-block">
                 {user.name}
               </span>
               <Button
@@ -43,7 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 size="icon"
                 onClick={() => logout()}
                 title="Sign Out"
-                className="text-slate-500 hover:text-red-600 hover:bg-red-50"
+                className="text-slate-400 hover:bg-red-500/10 hover:text-red-300"
               >
                 <LogOut className="h-5 w-5" />
               </Button>
