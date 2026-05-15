@@ -11,6 +11,7 @@ import router from "./routes/index.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
 import { getClerkPublishableKey, hasClerkRuntimeConfig, isDevBypassAllowed } from "./authConfig.js";
+import { registerPublicBenefitCenter } from "./publicBenefitCenter.js";
 
 const app: Express = express();
 const isProd = process.env.NODE_ENV === "production";
@@ -203,6 +204,9 @@ app.use((req, res, next) => {
 
 // ─── Trust proxy (required for rate limiting behind Replit's proxy) ───────────
 app.set("trust proxy", 1);
+
+// Public consumer-rights pages and resource APIs must register before the SPA catch-all.
+registerPublicBenefitCenter(app);
 
 // ─── Clerk Middleware ─────────────────────────────────────────────────────────
 // Skip Clerk token validation when:
