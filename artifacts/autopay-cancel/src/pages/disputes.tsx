@@ -203,14 +203,17 @@ export default function DisputesPage() {
   return (
     <Layout>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bank Stop Payments</h1>
-        <p className="mt-2 text-muted-foreground">
+        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
+          Next step: generate the bank letter
+        </p>
+        <h1 className="page-title gradient-text">Bank Stop Payments</h1>
+        <p className="mt-3 max-w-3xl text-slate-300">
           Create ACH stop-payment requests, recurring card disputes, and authorization revocation letters.
         </p>
       </div>
 
       {message && (
-        <div className="mb-6 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
           <AlertCircle className="h-4 w-4" />
           <span>{message}</span>
         </div>
@@ -218,10 +221,11 @@ export default function DisputesPage() {
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">
-          <Card className="rounded-2xl border-border/50 shadow-sm">
+          <Card className="app-card">
             <CardHeader>
-              <CardTitle>Dispute Request</CardTitle>
-              <CardDescription>Capture bank and merchant details for your stop payment file.</CardDescription>
+              <span className="badge-success w-fit">Step 1</span>
+              <CardTitle className="mt-3 text-white">Dispute Request</CardTitle>
+              <CardDescription className="text-slate-400">Capture bank and merchant details for your stop payment file.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Input placeholder="Merchant Name" value={form.merchantName} onChange={(e) => updateField("merchantName", e.target.value)} />
@@ -243,8 +247,8 @@ export default function DisputesPage() {
               <Input type="date" value={form.cancellationDate} onChange={(e) => updateField("cancellationDate", e.target.value)} />
               <Textarea placeholder="Reason for dispute" value={form.disputeReason} onChange={(e) => updateField("disputeReason", e.target.value)} />
 
-              <div className="rounded-xl border border-dashed border-slate-300 p-4">
-                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+              <div className="rounded-xl border border-dashed border-cyan-300/25 bg-white/5 p-4">
+                <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-200">
                   <Upload className="h-4 w-4" /> Evidence Upload Vault
                 </label>
                 <Input
@@ -252,11 +256,11 @@ export default function DisputesPage() {
                   multiple
                   onChange={(e) => setEvidenceFiles(Array.from(e.target.files || []))}
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-400">
                   Upload cancellation emails, screenshots, bank statements, confirmation numbers, or merchant support replies.
                 </p>
                 {evidenceFiles.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                  <ul className="mt-2 space-y-1 text-xs text-slate-300">
                     {evidenceFiles.map((f) => (
                       <li key={`${f.name}-${f.lastModified}`}>{f.name}</li>
                     ))}
@@ -265,11 +269,11 @@ export default function DisputesPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button onClick={generateLetter} disabled={isGenerating || !form.merchantName || !form.bankName}>
+                <Button className="btn-primary" onClick={generateLetter} disabled={isGenerating || !form.merchantName || !form.bankName}>
                   <FileText className="mr-2 h-4 w-4" />
                   {isGenerating ? "Generating..." : "Generate Letter"}
                 </Button>
-                <Button onClick={createDispute} disabled={isSaving || !form.merchantName || !form.bankName} variant="secondary">
+                <Button className="btn-secondary hover:bg-white/10" onClick={createDispute} disabled={isSaving || !form.merchantName || !form.bankName} variant="secondary">
                   <ShieldAlert className="mr-2 h-4 w-4" />
                   {isSaving ? "Saving..." : "Create Dispute"}
                 </Button>
@@ -278,10 +282,11 @@ export default function DisputesPage() {
           </Card>
 
           {selectedDispute && (
-            <Card className="rounded-2xl border-border/50 shadow-sm">
+            <Card className="app-card">
               <CardHeader>
-                <CardTitle>Continued Charge Workflow</CardTitle>
-                <CardDescription>Escalate disputes when the merchant continues charging.</CardDescription>
+                <span className="badge-alert w-fit">Escalation path</span>
+                <CardTitle className="mt-3 text-white">Continued Charge Workflow</CardTitle>
+                <CardDescription className="text-slate-400">Escalate disputes when the merchant continues charging.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <DisputeStatusTracker currentStatus={selectedDispute.status} />
@@ -298,7 +303,7 @@ export default function DisputesPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button onClick={updateStatus}>Save</Button>
+                  <Button className="btn-primary px-5" onClick={updateStatus}>Save</Button>
                 </div>
               </CardContent>
             </Card>
@@ -306,40 +311,42 @@ export default function DisputesPage() {
         </div>
 
         <div className="space-y-6 lg:col-span-7">
-          <Card className="min-h-[320px] rounded-2xl border-border/50 shadow-sm">
+          <Card className="app-card min-h-[320px]">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Generated Letter</CardTitle>
-                <CardDescription>PDF generation and Stripe-compatible hooks can consume this output.</CardDescription>
+                <span className="badge-success w-fit">Step 2</span>
+                <CardTitle className="mt-3 text-white">Generated Letter</CardTitle>
+                <CardDescription className="text-slate-400">PDF generation and Stripe-compatible hooks can consume this output.</CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={copyLetter} disabled={!generatedLetter}>
+                <Button className="btn-secondary hover:bg-white/10" variant="outline" onClick={copyLetter} disabled={!generatedLetter}>
                   <Copy className="mr-2 h-4 w-4" />Copy
                 </Button>
-                <Button variant="outline" onClick={exportLetterPdf} disabled={!generatedLetter}>
+                <Button className="btn-secondary hover:bg-white/10" variant="outline" onClick={exportLetterPdf} disabled={!generatedLetter}>
                   <Download className="mr-2 h-4 w-4" />Export PDF
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               {generatedLetter ? (
-                <pre className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">{generatedLetter}</pre>
+                <pre className="whitespace-pre-wrap rounded-xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200">{generatedLetter}</pre>
               ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-slate-500">
+                <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-10 text-center text-slate-400">
                   Generate a letter to preview it here.
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border-border/50 shadow-sm">
+          <Card className="app-card">
             <CardHeader>
-              <CardTitle>Bank Escalation Dashboard</CardTitle>
-              <CardDescription>Recent disputes and current status</CardDescription>
+              <span className="badge-success w-fit">Step 3</span>
+              <CardTitle className="mt-3 text-white">Bank Escalation Dashboard</CardTitle>
+              <CardDescription className="text-slate-400">Recent disputes and current status</CardDescription>
             </CardHeader>
             <CardContent>
               {!disputes.length ? (
-                <p className="text-sm text-slate-500">No disputes yet.</p>
+                <p className="text-sm text-slate-400">No disputes yet. Create a dispute to start tracking the bank follow-up.</p>
               ) : (
                 <div className="space-y-2">
                   {disputes.map((item) => (
@@ -351,14 +358,14 @@ export default function DisputesPage() {
                         setGeneratedLetter(item.generatedLetter || "");
                         setNextStatus(item.status);
                       }}
-                      className="w-full rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50"
+                      className="w-full rounded-xl border border-white/10 bg-white/5 p-3 text-left transition hover:border-cyan-300/30 hover:bg-cyan-400/10"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <div className="font-medium text-slate-900">{item.merchantName}</div>
-                          <div className="text-xs text-slate-500">{item.bankName} / {item.paymentType}</div>
+                          <div className="font-medium text-white">{item.merchantName}</div>
+                          <div className="text-xs text-slate-400">{item.bankName} / {item.paymentType}</div>
                         </div>
-                        <div className="rounded-full bg-slate-100 px-2 py-1 text-xs capitalize text-slate-700">
+                        <div className="rounded-full bg-cyan-400/10 px-2 py-1 text-xs capitalize text-cyan-200">
                           {item.status.replace(/_/g, " ")}
                         </div>
                       </div>
@@ -369,7 +376,7 @@ export default function DisputesPage() {
             </CardContent>
           </Card>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             Legal Disclaimer: This platform provides self-help document generation tools. We are not a law firm, bank, or financial institution and do not provide legal or financial advice.
           </p>
         </div>
