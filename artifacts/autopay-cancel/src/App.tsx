@@ -7,6 +7,7 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setApiTokenProvider } from "@workspace/api-client-react";
 import { StartingUpController } from "@/lib/use-starting-up";
+import { basePath, clerkPubKey, isClerkEnabled, isDevBypassEnabled } from "@/lib/auth-mode";
 
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
@@ -19,10 +20,7 @@ import Documents from "@/pages/documents";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const bypassEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath)
@@ -73,7 +71,7 @@ function RootRedirectClerk() {
 
 // Bypass-mode redirect — no Clerk hooks, just go to sign-in (which auto-logs in)
 function RootRedirect() {
-  if (bypassEnabled) return <Redirect to="/sign-in" />;
+  if (!isClerkEnabled) return <Redirect to="/sign-in" />;
   return <RootRedirectClerk />;
 }
 
@@ -130,7 +128,7 @@ function ClerkUnavailableFallback() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center space-y-4">
         <div className="text-2xl font-bold text-slate-900">Auto-Pay Cancel</div>
-        {bypassEnabled ? (
+        {isDevBypassEnabled ? (
           <>
             <p className="text-sm text-slate-500">Sign in to continue</p>
             <button
@@ -165,10 +163,7 @@ function ClerkProviderWithRoutes() {
   );
 
   // Bypass mode: skip Clerk entirely — no network calls to Clerk servers
-  if (bypassEnabled) return bare;
-
-  // No key configured: also skip Clerk
-  if (!clerkPubKey) return bare;
+  if (!isClerkEnabled || !clerkPubKey) return bare;
 
   return (
     <ClerkErrorBoundary fallback={<ClerkUnavailableFallback />}>

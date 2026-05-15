@@ -1,8 +1,6 @@
 import { useUser, useClerk } from "@clerk/react";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
-
-const bypassMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEV_BYPASS === "true";
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { basePath, isClerkEnabled } from "@/lib/auth-mode";
 
 async function callLogout() {
   try {
@@ -77,6 +75,6 @@ function useAuthBypass() {
   };
 }
 
-// Statically pick the right hook — bypassMode is a compile-time constant so
-// the same function is always exported, satisfying React's rules of hooks.
-export const useAuth = bypassMode ? useAuthBypass : useAuthClerk;
+// Statically pick the right hook so the same function is always exported,
+// satisfying React's rules of hooks.
+export const useAuth = isClerkEnabled ? useAuthClerk : useAuthBypass;
