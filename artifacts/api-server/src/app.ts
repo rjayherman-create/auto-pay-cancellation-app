@@ -210,10 +210,12 @@ app.set("trust proxy", 1);
 //      require either the dev_session cookie or a real Clerk token.
 const _clerkMw = clerkMiddleware();
 const _hasClerkPublishableKey =
-  process.env.CLERK_PUBLISHABLE_KEY ||
-  process.env.VITE_CLERK_PUBLISHABLE_KEY;
+  !!(process.env.CLERK_PUBLISHABLE_KEY || process.env.VITE_CLERK_PUBLISHABLE_KEY);
+const _hasClerkSecretKey = !!process.env.CLERK_SECRET_KEY;
 const _bypassAllowed =
-  process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_BYPASS === "true";
+  process.env.NODE_ENV === "development" ||
+  process.env.ENABLE_DEV_BYPASS === "true" ||
+  !(_hasClerkPublishableKey && _hasClerkSecretKey);
 app.use((req, res, next) => {
   if (_bypassAllowed && (req.cookies as Record<string, string>)?.dev_session === "1") {
     return next();
