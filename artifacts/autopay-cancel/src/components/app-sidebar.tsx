@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, List, Building, FileText, Settings, ShieldCheck, ShieldAlert } from "lucide-react";
+import { AlertTriangle, LayoutDashboard, List, Building, FileText, Settings, ShieldCheck, ShieldAlert } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ const items = [
   { title: "Bank Accounts", url: "/accounts", icon: Building },
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Bank Stop Payments", url: "/dashboard/disputes", icon: ShieldAlert },
+  { title: "Continued Charges", url: "/dashboard/continued-charge-detector", icon: AlertTriangle },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

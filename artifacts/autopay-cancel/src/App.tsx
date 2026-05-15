@@ -19,6 +19,7 @@ import Accounts from "@/pages/accounts";
 import Documents from "@/pages/documents";
 import Settings from "@/pages/settings";
 import DisputesPage from "@/pages/disputes";
+import ContinuedChargeDetector from "@/pages/continued-charge-detector";
 import NotFound from "@/pages/not-found";
 
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
@@ -92,6 +93,7 @@ function Router() {
       <Route path="/documents" component={Documents} />
       <Route path="/settings" component={Settings} />
       <Route path="/dashboard/disputes" component={DisputesPage} />
+      <Route path="/dashboard/continued-charge-detector" component={ContinuedChargeDetector} />
       <Route component={NotFound} />
     </Switch>
   );

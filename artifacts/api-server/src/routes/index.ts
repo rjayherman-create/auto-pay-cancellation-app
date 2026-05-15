@@ -9,6 +9,7 @@ import stripeRouter from "./stripe.js";
 import plaidRouter from "./plaid.js";
 import adminRouter from "./admin.js";
 import disputesRouter from "./disputes.js";
+import continuedChargesRouter from "./continuedCharges.js";
 import { authLimiter } from "../middlewares/rateLimiter.js";
 
 const router: IRouter = Router();
@@ -23,5 +24,6 @@ router.use("/stripe", stripeRouter);
 router.use("/plaid", plaidRouter);
 router.use("/admin", adminRouter);
 router.use("/disputes", disputesRouter);
+router.use("/continued-charges", continuedChargesRouter);
 
 export default router;

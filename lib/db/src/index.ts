@@ -184,6 +184,18 @@ export async function initDb(): Promise<void> {
         created_at        TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at        TIMESTAMP NOT NULL DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS continued_charges (
+        id                 SERIAL PRIMARY KEY,
+        user_id            INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        merchant_name      TEXT NOT NULL,
+        cancellation_date  TEXT,
+        extracted_charges  JSONB,
+        timeline_data      JSONB,
+        evidence_summary   TEXT,
+        dispute_packet     TEXT,
+        created_at         TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
     console.log("[DB] Schema ready.");
   } catch (err: any) {
