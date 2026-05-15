@@ -11,6 +11,7 @@ import { basePath, clerkProxyUrl, clerkPubKey, isClerkEnabled, isDevBypassEnable
 
 const SignInPage = lazy(() => import("@/pages/sign-in"));
 const SignUpPage = lazy(() => import("@/pages/sign-up"));
+const LandingPage = lazy(() => import("@/pages/landing"));
 const Onboarding = lazy(() => import("@/pages/onboarding"));
 const Dashboard = lazy(() => import("@/pages/dashboard"));
 const Subscriptions = lazy(() => import("@/pages/subscriptions"));
@@ -102,6 +103,8 @@ function Router() {
       <Switch>
         <Route path="/sign-in/*?" component={SignInPage} />
         <Route path="/sign-up/*?" component={SignUpPage} />
+        <Route path="/landing" component={LandingPage} />
+        <Route path="/signup" component={LandingPage} />
         <Route path="/login"><ReplaceRedirect to="/sign-in" /></Route>
         <Route path="/register"><ReplaceRedirect to="/sign-up" /></Route>
         <Route path="/" component={RootRedirect} />
