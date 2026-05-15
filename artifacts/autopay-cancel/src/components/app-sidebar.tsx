@@ -1,11 +1,16 @@
 import { Link, useLocation } from "wouter";
-import { AlertTriangle, Archive, LayoutDashboard, List, Building, FileText, Settings, ShieldCheck, ShieldAlert } from "lucide-react";
+import {
+  AlertTriangle,
+  CreditCard,
+  FolderLock,
+  LayoutDashboard,
+  Settings,
+  ShieldAlert,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -13,48 +18,56 @@ import {
 } from "@/components/ui/sidebar";
 
 const items = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Subscriptions", url: "/subscriptions", icon: List },
-  { title: "Bank Accounts", url: "/accounts", icon: Building },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Disputes", url: "/disputes", icon: ShieldAlert },
-  { title: "Evidence Vault", url: "/evidence-vault", icon: Archive },
-  { title: "Continued Charges", url: "/continued-charges", icon: AlertTriangle },
-  { title: "Settings", url: "/settings", icon: Settings },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Subscriptions", href: "/subscriptions", icon: CreditCard },
+  { label: "Disputes", href: "/disputes", icon: ShieldAlert },
+  { label: "Evidence Vault", href: "/evidence-vault", icon: FolderLock },
+  { label: "Continued Charges", href: "/continued-charges", icon: AlertTriangle },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
   const [location] = useLocation();
   
   return (
-    <Sidebar className="border-r border-border/50 bg-sidebar">
-      <SidebarHeader className="h-16 flex items-center px-6 border-b border-border/50 justify-center flex-row">
-         <div className="flex items-center gap-2 font-display text-lg font-bold text-primary w-full">
-           <ShieldCheck className="h-6 w-6" />
-           <span>AutoPay Cancel</span>
-         </div>
+    <Sidebar className="border-r border-zinc-800 bg-zinc-950 text-zinc-100">
+      <SidebarHeader className="border-b border-zinc-800 p-6">
+        <h1 className="text-2xl font-bold leading-tight text-white">
+          Recurring Charge Protection
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+          Organize, track, and dispute recurring charges.
+        </p>
       </SidebarHeader>
-      <SidebarContent className="px-4 py-6">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {items.map((item) => {
-                const isActive = location === item.url || (item.url !== '/dashboard' && location.startsWith(item.url));
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive} className={`rounded-xl h-10 px-3 transition-all duration-200 ${isActive ? 'bg-primary/10 text-primary font-medium' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
-                      <Link href={item.url}>
-                        <item.icon className="h-5 w-5 mr-3" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      <SidebarContent className="p-4">
+        <SidebarGroupContent>
+          <SidebarMenu className="space-y-2">
+            {items.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                location === item.href ||
+                (item.href !== "/dashboard" && location.startsWith(item.href));
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className={`h-12 rounded-xl px-4 transition-all duration-200 ${
+                      isActive
+                        ? "bg-white text-black hover:bg-white hover:text-black"
+                        : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                    }`}
+                  >
+                    <Link href={item.href}>
+                      <Icon className="mr-3 h-5 w-5" />
+                      <span className="font-medium">{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
       </SidebarContent>
     </Sidebar>
   );
