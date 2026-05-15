@@ -174,8 +174,10 @@ const _clerkMw = clerkMiddleware();
 const _hasClerkPublishableKey =
   process.env.CLERK_PUBLISHABLE_KEY ||
   process.env.VITE_CLERK_PUBLISHABLE_KEY;
+const _bypassAllowed =
+  process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_BYPASS === "true";
 app.use((req, res, next) => {
-  if ((req.cookies as Record<string, string>)?.dev_session === "1") {
+  if (_bypassAllowed && (req.cookies as Record<string, string>)?.dev_session === "1") {
     return next();
   }
   if (!_hasClerkPublishableKey) {

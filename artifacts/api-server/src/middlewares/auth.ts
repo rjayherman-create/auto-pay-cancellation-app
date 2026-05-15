@@ -9,14 +9,16 @@ export interface AuthenticatedRequest extends Request {
 }
 
 const DEV_CLERK_USER_ID = "dev_bypass_user";
+const BYPASS_ALLOWED = () =>
+  process.env.NODE_ENV === "development" || process.env.ENABLE_DEV_BYPASS === "true";
 
 export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  // ── Temporary bypass — trust dev_session cookie unconditionally ───────────
-  if (req.cookies?.dev_session === "1") {
+  // ── Dev bypass (only when explicitly allowed) ─────────────────────────────
+  if (BYPASS_ALLOWED() && req.cookies?.dev_session === "1") {
     try {
       let [user] = await db
         .select({ id: usersTable.id })
